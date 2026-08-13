@@ -1,11 +1,14 @@
-# blog
-a simple project about a blog setup
+# Blog 
+## a simple project about a blog setup
+### stack used:
+  ___
+* Typescript 
+* Express
+* Prisma ORM
+* MySql
+* Joi
 
-stack used:
--Typescript 
--Express
--Prisma ORM
--MySql
--Joi
-
-Advise: On development
+## And a friendly advise:
+  
+* The project is still on development and not runnable yet ;)
+  ___
