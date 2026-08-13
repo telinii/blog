@@ -1,13 +1,16 @@
 import "dotenv/config";
-import { PrismaClient } from "./generated/prisma/client";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-let adapter: PrismaMariaDb; // declarei aqui, vazio por enquanto
+import express from "express";
+import router from "./routes/userRoutes";
 
-if (process.env.DATABASE_URL) {
-  adapter = new PrismaMariaDb(process.env.DATABASE_URL);
-}
-else {
-    throw new Error("DATABASE_URL não está definida no .env")
-}
-const  prisma = new PrismaClient({adapter});
+const app = express();
+
+app.use(express.json());
+app.use(router);
+
+//routes come here
+
+app.listen(3000, () => {
+  console.log("Servidor rodando na porta 3000");
+});
+
 console.log("Conectado!")
