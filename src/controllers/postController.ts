@@ -19,6 +19,7 @@ export async function createPost (req: Request, res: Response) {
         res.status(400).json({ erro: error.details[0].message });
         return;
     } 
+
     
 const post = await prisma.post.create({
   data: {
@@ -29,5 +30,14 @@ const post = await prisma.post.create({
     },  
 })
     res.status(201).json(post);
+
+}
+export async function listPosts(req: Request, res: Response) {
+  const posts = await prisma.post.findMany({
+    include: { usuario: true },
+  });
+
+
+  res.status(200).json(posts);
 }
 
