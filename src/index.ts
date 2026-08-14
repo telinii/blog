@@ -1,10 +1,12 @@
+import postRoutes from "./routes/postRoutes";
 import "dotenv/config";
 import express from "express";
 import router from "./routes/userRoutes";
 
-const app = express();
 
+const app = express();
 app.use(express.json());
+app.use(postRoutes);
 app.use(router);
 
 //routes come here

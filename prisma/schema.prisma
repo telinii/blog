@@ -26,8 +26,8 @@ model Post {
   titulo String
   conteudo String @db.Text
   categoria String
-  publicado Boolean
-  data DateTime
+  publicado Boolean @default(false)
+  data DateTime @default(now())
   usuarioId Int
   usuario User @relation(fields: [usuarioId], references: [id])
 }
