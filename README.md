@@ -34,6 +34,8 @@ FLUSH PRIVILEGES;
 
 The global `GRANT ALL PRIVILEGES ON *.*` is needed so Prisma Migrate can create a temporary shadow database during development. For local/learning setups this is fine.
 
+> Note: the `FLUSH PRIVILEGES;` is optional since `GRANT` applies immediately in modern MySQL, but it's harmless to keep.
+
 ### 2. Configure the environment variables
 
 Copy the example file and fill in your database password:
@@ -57,6 +59,8 @@ npm run dev
 ```
 
 The API will be available at http://localhost:3000
+
+> Note: if the first request returns a `pool timeout` error right after starting the server, it's the Prisma connection pool warming up — just send the request again.
 
 ### Testing the API
 
