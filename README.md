@@ -5,7 +5,7 @@
 * Typescript
 * Express
 * Prisma ORM
-* MySql
+* MySQL
 * Joi
 
 ## Getting Started
@@ -28,11 +28,11 @@ Then run:
 ```sql
 CREATE DATABASE bloggers;
 CREATE USER 'blog_user'@'localhost' IDENTIFIED BY '<YOUR_PASSWORD>';
-GRANT ALL PRIVILEGES ON *.* TO 'blog_user'@'localhost';
+GRANT ALL PRIVILEGES ON bloggers.* TO 'blog_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-The global `GRANT ALL PRIVILEGES ON *.*` is needed so Prisma Migrate can create a temporary shadow database during development. For local/learning setups this is fine.
+The `GRANT ... ON bloggers.*` covers everything this project needs. If you also want to use `npx prisma migrate dev` (which creates a temporary shadow database during development), you'll need the global grant instead: `GRANT ALL PRIVILEGES ON *.* TO 'blog_user'@'localhost';`
 
 > Note: the `FLUSH PRIVILEGES;` is optional since `GRANT` applies immediately in modern MySQL, but it's harmless to keep.
 
@@ -69,6 +69,8 @@ Create a user (the password must be 10-20 characters long):
 ```
 curl -X POST http://localhost:3000/users -H "Content-Type: application/json" -d '{"nome":"Maria","email":"maria@teste.com","bio":"Dev em aprendizado","senha":"senha12345"}'
 ```
+
+> Note: if you run this again, use a different `email` (it must be unique) and `senha12345` will be stored in plain text for now — hashing comes with the authentication phase.
 
 Create a post (use the `id` returned by the previous request as `usuarioId`):
 
