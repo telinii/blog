@@ -19,29 +19,25 @@ export async function createPost(req: Request, res: Response) {
   // Runs the validation. Joi returns an "error" only if something is invalid
   const { error } = postSchema.validate(req.body);
 
-  // If validation failed, respond with 400 and stop
-  if (error) {
-    res.status(400).json({ erro: error.details[0].message });
-    return;
+  try {
+    const post = await prisma.post.create({
+      data: {
+        categoria: categoria,
+        titulo: titulo,
+        conteudo: conteudo,
+        usuario: { connect: { id: usuarioId } }
+      },
+    });
+
+    res.status(201).json(post);
+  } catch (error: any) {
+    if (error.code === "P2025") {
+      res.status(400).json({ erro: "Usuário não encontrado" });
+    } else {
+      console.error("Erro ao criar post:", error);
+      res.status(500).json({ erro: "Erro interno no servidor" });
+    }
   }
-
-  // Creates the post and CONNECTS it to an existing user.
-  // "usuario: { connect: { id: usuarioId } }" means:
-  // "link this post to the user whose id is usuarioId".
-  // This is how Prisma writes the usuarioId column using the relation
-  // defined in schema.prisma. The DB rejects it if the user does not exist.
-  const post = await prisma.post.create({
-    data: {
-      categoria: categoria,
-      titulo: titulo,
-      conteudo: conteudo,
-      usuario: { connect: { id: usuarioId } }
-    },
-  });
-
-  // 201 = created. Returns the created post.
-  // Note: publicado (false) and data (now) were filled by the server defaults.
-  res.status(201).json(post);
 }
 
 export async function listPosts(req: Request, res: Response) {
@@ -49,7 +45,11 @@ export async function listPosts(req: Request, res: Response) {
   // "include: { usuario: true }" brings the author nested inside each post,
   // using the 1:N relation (a post belongs to one user).
   const posts = await prisma.post.findMany({
-    include: { usuario: true },
+    include: {
+      usuario: {
+        select: { id: true, nome: true, email: true, bio: true },  // No pswd
+  },
+},
   });
 
   // 200 = OK. Returns the list of posts, each with its author
