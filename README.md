@@ -2,11 +2,12 @@
 ## A simple project about a blog setup
 ### Technologies used:
   ___
-* Typescript
+* Typescript 
 * Express
 * Prisma ORM
 * MySQL
 * Joi
+* bcrypt
 
 ### Security Notes
 * Passwords are hashed with bcrypt (salt rounds: 10) before being stored. Hashing is one-way — the original password cannot be recovered, even by the database owner.
