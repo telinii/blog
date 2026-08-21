@@ -8,6 +8,11 @@
 * MySQL
 * Joi
 
+### Security Notes
+* Passwords are hashed with bcrypt (salt rounds: 10) before being stored. Hashing is one-way — the original password cannot be recovered, even by the database owner.
+* The password never leaves the database in any response (`select` without `senha` in `POST /users`/`POST /login`, explicit `select` in `GET /posts`).
+* `POST /login` uses `bcrypt.compare` and returns the same `401 {"erro":"Erro no login"}` for both "email not found" and "wrong password" to avoid leaking information.
+
 ## Getting Started
 
 ### Prerequisites
