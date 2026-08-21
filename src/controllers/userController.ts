@@ -2,6 +2,7 @@ import joi from "joi";
 import { Request, Response } from "express";
 import { prisma } from "../prisma";
 import bcrypt from "bcrypt"
+import jwt from "jsonwebtoken";
 // Defines the validation rules for the request body of POST /users.
 // This is a "gatekeeper": if the data does not match these rules,
 // the request is rejected BEFORE reaching the database.
@@ -84,6 +85,11 @@ export async function login(req: Request, res: Response) {
     res.status(401).json({"erro": "Erro no login"})
     return
   }
+  const token = jwt.sign(
+    { id: user.id, email: user.email }, // payload: o que o token carrega
+    process.env.JWT_SECRET!,             // segredo do .env
+    { expiresIn: "1h" }                  // expira em 1 hora
+  );
 
-  res.status(200).json({id: user.id, nome: user.nome, email: user.email, bio: user.bio})
+  res.status(200).json({ token });
 }

@@ -8,11 +8,13 @@
 * MySQL
 * Joi
 * bcrypt
+* jsonwebtoken (JWT Bearer)
 
 ### Security Notes
 * Passwords are hashed with bcrypt (salt rounds: 10) before being stored. Hashing is one-way — the original password cannot be recovered, even by the database owner.
 * The password never leaves the database in any response (`select` without `senha` in `POST /users`/`POST /login`, explicit `select` in `GET /posts`).
 * `POST /login` uses `bcrypt.compare` and returns the same `401 {"erro":"Erro no login"}` for both "email not found" and "wrong password" to avoid leaking information.
+* `POST /login` returns a signed JWT Bearer token (`{ token }`, expires in 1h). Protected routes require `Authorization: Bearer <token>` (checked by `src/middlewares/auth.ts`). The token payload contains the user id, so the server knows who is creating a post.
 
 ## Getting Started
 
@@ -44,11 +46,13 @@ The `GRANT ... ON bloggers.*` covers everything this project needs. If you also 
 
 ### 2. Configure the environment variables
 
-Copy the example file and fill in your database password:
+Copy the example file and fill in your secrets:
 
 ```
 cp .env.example .env
 ```
+
+Then edit `.env` and replace `<YOUR_PASSWORD>` and `<YOUR_JWT_SECRET>` (generate a strong secret, e.g. `openssl rand -base64 32`).
 
 ### 3. Install dependencies and set up the database
 
@@ -73,21 +77,28 @@ The API will be available at http://localhost:3000
 Create a user (the password must be 10-20 characters long):
 
 ```
-curl -X POST http://localhost:3000/users -H "Content-Type: application/json" -d '{"nome":"Maria","email":"maria@teste.com","bio":"Dev em aprendizado","senha":"senha12345"}'
+curl -X POST http://localhost:3000/users -H "Content-Type: application/json" -d '{"nome":"<YOUR_NAME>","email":"<YOUR_EMAIL>","bio":"<YOUR_BIO>","senha":"<YOUR_PASSWORD>"}'
+# Example: {"nome":"Maria","email":"maria@example.com","bio":"Learning dev","senha":"senha12345"}
 ```
 
 > Note: if you run this again, use a different `email` (it must be unique). The password is stored as a bcrypt hash and never returned in any response.
 
-Login (returns 200 on success, 401 with `{"erro":"Erro no login"}` on any failure — email not found or wrong password — without revealing which field is incorrect):
+Login (returns `{ token }` on success, 401 with `{"erro":"Erro no login"}` on any failure — email not found or wrong password — without revealing which field is incorrect):
 
 ```
-curl -X POST http://localhost:3000/login -H "Content-Type: application/json" -d '{"email":"maria@teste.com","senha":"senha12345"}'
+curl -X POST http://localhost:3000/login -H "Content-Type: application/json" -d '{"email":"<YOUR_EMAIL>","senha":"<YOUR_PASSWORD>"}'
+# -> {"token":"eyJhbGciOiJIUzI1NiIs..."}
 ```
 
-Create a post (use the `id` returned by the previous request as `usuarioId`):
+Create a post (requires Bearer token — the author is taken from the token, not from the body):
 
 ```
-curl -X POST http://localhost:3000/posts -H "Content-Type: application/json" -d '{"titulo":"My first post","conteudo":"Content of a test post","categoria":"Tecnology","usuarioId":1}'
+# For bash/zsh:
+TOKEN=$(curl -s -X POST http://localhost:3000/login -H "Content-Type: application/json" -d '{"email":"<YOUR_EMAIL>","senha":"<YOUR_PASSWORD>"}' | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+# For fish:
+# set TOKEN (curl -s -X POST http://localhost:3000/login -H "Content-Type: application/json" -d '{"email":"<YOUR_EMAIL>","senha":"<YOUR_PASSWORD>"}' | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+curl -X POST http://localhost:3000/posts -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" -d '{"titulo":"<YOUR_TITLE>","conteudo":"<YOUR_CONTENT>","categoria":"<YOUR_CATEGORY>"}'
 ```
 
 List all posts with their authors:

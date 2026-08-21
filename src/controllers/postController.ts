@@ -6,7 +6,6 @@ import { prisma } from "../prisma";
 // data and publicado are NOT here because the server defines them
 // (see the @default() in schema.prisma).
 const postSchema = joi.object({
-  usuarioId: joi.number().integer().min(1).required(), // which user owns the post
   titulo: joi.string().min(1).max(100).required(), // title: required, 1 to 100 chars
   conteudo: joi.string().min(1).max(5000).required(), // body: required, up to 5000 chars
   categoria: joi.string().min(1).max(50).required() // category: required, 1 to 50 chars
@@ -14,7 +13,9 @@ const postSchema = joi.object({
 
 export async function createPost(req: Request, res: Response) {
   // Extracts the fields sent by the client from the request body
-  const { usuarioId, titulo, conteudo, categoria } = req.body;
+  const { titulo, conteudo, categoria } = req.body;
+
+   const usuarioId = (req as any).user.id; // comes from token, not body
 
   // Runs the validation. Joi returns an "error" only if something is invalid
   const { error } = postSchema.validate(req.body);
