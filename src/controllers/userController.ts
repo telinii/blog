@@ -11,6 +11,10 @@ const userSchema = joi.object({
   bio: joi.string().max(250).required(), // bio: required, max 250 chars
   senha: joi.string().min(10).max(20).required() // password: required, 10 to 20 chars
 });
+const loginSchema = joi.object({
+  email: joi.string().email().min(5).required(),
+  senha: joi.string().min(10).max(20).required()
+});
 
 export async function createUser(req: Request, res: Response) {
   // Extracts the fields sent by the client from the request body
@@ -53,4 +57,33 @@ export async function createUser(req: Request, res: Response) {
     res.status(500).json({ erro: "Erro interno no servidor" });
        }
     }
+}
+// Handles POST /login — authenticates a user
+export async function login(req: Request, res: Response) {
+  const { email, senha } = req.body;
+
+  // 1. validate with loginSchema (same pattern as createUser)
+  // if error -> 400
+  const { error } = loginSchema.validate(req.body);
+
+  if (error) {
+    res.status(400).json({ erro: error.details[0].message });
+    return; // stops the function so the code below never runs
+  }
+
+
+  // 2. find user by email (prisma.user.findUnique)
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    res.status(401).json({"erro":"Erro no login"})
+    return
+  } 
+
+  const ok = await bcrypt.compare(senha, user.senha)
+  if(!ok) {
+    res.status(401).json({"erro": "Erro no login"})
+    return
+  }
+
+  res.status(200).json({id: user.id, nome: user.nome, email: user.email, bio: user.bio})
 }

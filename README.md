@@ -70,7 +70,13 @@ Create a user (the password must be 10-20 characters long):
 curl -X POST http://localhost:3000/users -H "Content-Type: application/json" -d '{"nome":"Maria","email":"maria@teste.com","bio":"Dev em aprendizado","senha":"senha12345"}'
 ```
 
-> Note: if you run this again, use a different `email` (it must be unique) and `senha12345` will be stored in plain text for now — hashing comes with the authentication phase.
+> Note: if you run this again, use a different `email` (it must be unique). The password is stored as a bcrypt hash and never returned in any response.
+
+Login (returns 200 on success, 401 with `{"erro":"Erro no login"}` on any failure — email not found or wrong password — without revealing which field is incorrect):
+
+```
+curl -X POST http://localhost:3000/login -H "Content-Type: application/json" -d '{"email":"maria@teste.com","senha":"senha12345"}'
+```
 
 Create a post (use the `id` returned by the previous request as `usuarioId`):
 
