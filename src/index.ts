@@ -14,6 +14,11 @@ app.use(express.json());
 app.use(postRoutes);
 app.use(router);
 
+// Health check for the root URL (avoids "Cannot GET /")
+app.get("/", (req, res) => {
+  res.json({ message: "API Blog online", endpoints: ["/users", "/login", "/posts"] });
+});
+
 // Starts the HTTP server on port 3000
 app.listen(3000, () => {
   console.log("Servidor rodando na porta 3000");
