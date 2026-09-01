@@ -1,5 +1,5 @@
 # Blog
-## A simple project about a blog setup
+## A RESTful Blog API with JWT authentication — built with TypeScript, Express, Prisma and MySQL
 ### Technologies used:
   ___
 * Typescript 
