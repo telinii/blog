@@ -74,6 +74,18 @@ The API will be available at http://localhost:3000
 
 ### Testing the API
 
+#### Testing with Insomnia (recommended)
+
+1. Create a Request Collection (e.g. `Blog`).
+2. **POST /users:** `POST http://localhost:3000/users` → `Body` → `JSON` → `{"nome":"<YOUR_NAME>","email":"<YOUR_EMAIL>","bio":"<YOUR_BIO>","senha":"<YOUR_PASSWORD>"}` → `Send` → `201` without `senha`.
+3. **POST /login:** `POST http://localhost:3000/login` → `Body` `JSON` → `{"email":"<YOUR_EMAIL>","senha":"<YOUR_PASSWORD>"}` → `Send` → copy `token`.
+4. **POST /posts (protected):** `POST http://localhost:3000/posts` → `Auth` → `Bearer Token` → paste `token` → `Body` `JSON` → `{"titulo":"<YOUR_TITLE>","conteudo":"<YOUR_CONTENT>","categoria":"<YOUR_CATEGORY>"}` → `Send` → `201`.
+5. **GET /posts:** `GET http://localhost:3000/posts` → `Send` → list without `senha`.
+
+For the deployed API, replace `http://localhost:3000` with your Railway URL (e.g. `https://<YOUR_RAILWAY_URL>.up.railway.app`).
+
+#### Testing with curl (alternative)
+
 Create a user (the password must be 10-20 characters long):
 
 ```
