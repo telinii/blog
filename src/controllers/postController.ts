@@ -12,13 +12,21 @@ const postSchema = joi.object({
 });
 
 export async function createPost(req: Request, res: Response) {
-  // Extracts the fields sent by the client from the request body
-  const { titulo, conteudo, categoria } = req.body;
+  // Runs the validation BEFORE touching the database.
+  // Joi returns an "error" only if something is invalid.
+  const { error, value } = postSchema.validate(req.body);
 
-   const usuarioId = (req as any).user.id; // comes from token, not body
+  // If validation failed, respond with 400 (bad request) and the error message.
+  // Without this check the schema was pure decoration: invalid posts reached the DB.
+  if (error) {
+    res.status(400).json({ erro: error.details[0].message });
+    return; // stops the function so the code below never runs
+  }
 
-  // Runs the validation. Joi returns an "error" only if something is invalid
-  const { error } = postSchema.validate(req.body);
+  // Uses the validated value (not req.body), so unknown keys are discarded
+  const { titulo, conteudo, categoria } = value;
+
+  const usuarioId = req.user!.id; // comes from the token, not the body
 
   try {
     const post = await prisma.post.create({
@@ -42,17 +50,24 @@ export async function createPost(req: Request, res: Response) {
 }
 
 export async function listPosts(req: Request, res: Response) {
-  // findMany without "where" returns ALL posts.
-  // "include: { usuario: true }" brings the author nested inside each post,
-  // using the 1:N relation (a post belongs to one user).
-  const posts = await prisma.post.findMany({
-    include: {
-      usuario: {
-        select: { id: true, nome: true, email: true, bio: true },  // No pswd
-  },
-},
-  });
+  try {
+    // findMany without "where" returns ALL posts.
+    // "include: { usuario: true }" brings the author nested inside each post,
+    // using the 1:N relation (a post belongs to one user).
+    const posts = await prisma.post.findMany({
+      include: {
+        usuario: {
+          select: { id: true, nome: true, email: true, bio: true },  // No pswd
+        },
+      },
+    });
 
-  // 200 = OK. Returns the list of posts, each with its author
-  res.status(200).json(posts);
+    // 200 = OK. Returns the list of posts, each with its author
+    res.status(200).json(posts);
+  } catch (error) {
+    // Without this try/catch the rejection would reach Express's default
+    // handler and leak a stack trace to the client.
+    console.error("Erro ao listar posts:", error);
+    res.status(500).json({ erro: "Erro interno no servidor" });
+  }
 }
