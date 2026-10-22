@@ -1,36 +1,25 @@
-import joi from "joi";
 import { Request, Response } from "express";
 import { prisma } from "../prisma";
-import bcrypt from "bcrypt"
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-// Defines the validation rules for the request body of POST /users.
-// This is a "gatekeeper": if the data does not match these rules,
-// the request is rejected BEFORE reaching the database.
-// 191 is the size of Prisma's default VARCHAR on MySQL: a longer email
-// would pass Joi and fail in the database (P2000) with a generic 500.
-const userSchema = joi.object({
-  nome: joi.string().min(1).max(25).required(), // name: required, 1 to 25 chars
-  email: joi.string().email().min(5).max(191).required(), // email: valid format, 5 to 191 chars
-  bio: joi.string().max(250).required(), // bio: required, max 250 chars
-  senha: joi.string().min(10).max(20).required() // password: required, 10 to 20 chars
-});
-const loginSchema = joi.object({
-  email: joi.string().email().min(5).max(191).required(),
-  senha: joi.string().min(10).max(20).required()
-});
+import { loginSchema, userSchema } from "../schemas/user.schema";
+
+// The rules (and their types) live in src/schemas/user.schema.ts.
+// This file only decides what to do with the result.
 
 export async function createUser(req: Request, res: Response) {
-  // Runs the validation. Joi returns an "error" only if something is invalid
-  const { error, value } = userSchema.validate(req.body);
+  // safeParse never throws: it returns { success: true, data }
+  // or { success: false, error }.
+  const result = userSchema.safeParse(req.body);
 
   // If validation failed, respond with 400 (bad request) and the error message
-  if (error) {
-    res.status(400).json({ erro: error.details[0].message });
+  if (!result.success) {
+    res.status(400).json({ erro: result.error.issues[0].message });
     return; // stops the function so the code below never runs
   }
 
-  // Uses the validated value (not req.body), so unknown keys are discarded
-  const { nome, email, bio, senha } = value;
+  // Validated and typed (UserInput). Unknown keys were rejected by .strict().
+  const { nome, email, bio, senha } = result.data;
 
   // Everything that can throw is inside the try: even bcrypt can fail
   // (e.g. missing native binding), and an unhandled rejection would leak
@@ -64,17 +53,18 @@ export async function createUser(req: Request, res: Response) {
     }
   }
 }
+
 // Handles POST /login — authenticates a user
 export async function login(req: Request, res: Response) {
   // 1. validate with loginSchema (same pattern as createUser)
-  const { error, value } = loginSchema.validate(req.body);
+  const result = loginSchema.safeParse(req.body);
 
-  if (error) {
-    res.status(400).json({ erro: error.details[0].message });
+  if (!result.success) {
+    res.status(400).json({ erro: result.error.issues[0].message });
     return; // stops the function so the code below never runs
   }
 
-  const { email, senha } = value;
+  const { email, senha } = result.data;
 
   try {
     // 2. find user by email (prisma.user.findUnique)

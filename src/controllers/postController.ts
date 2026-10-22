@@ -1,30 +1,20 @@
-import joi from "joi";
 import { Request, Response } from "express";
 import { prisma } from "../prisma";
-
-// Validation rules for POST /posts.
-// data and publicado are NOT here because the server defines them
-// (see the @default() in schema.prisma).
-const postSchema = joi.object({
-  titulo: joi.string().min(1).max(100).required(), // title: required, 1 to 100 chars
-  conteudo: joi.string().min(1).max(5000).required(), // body: required, up to 5000 chars
-  categoria: joi.string().min(1).max(50).required() // category: required, 1 to 50 chars
-});
+import { postSchema } from "../schemas/post.schema";
 
 export async function createPost(req: Request, res: Response) {
   // Runs the validation BEFORE touching the database.
-  // Joi returns an "error" only if something is invalid.
-  const { error, value } = postSchema.validate(req.body);
+  // safeParse never throws: it returns success/data or success/error.
+  const result = postSchema.safeParse(req.body);
 
   // If validation failed, respond with 400 (bad request) and the error message.
-  // Without this check the schema was pure decoration: invalid posts reached the DB.
-  if (error) {
-    res.status(400).json({ erro: error.details[0].message });
+  if (!result.success) {
+    res.status(400).json({ erro: result.error.issues[0].message });
     return; // stops the function so the code below never runs
   }
 
-  // Uses the validated value (not req.body), so unknown keys are discarded
-  const { titulo, conteudo, categoria } = value;
+  // Uses the validated data (not req.body): unknown keys were rejected by .strict()
+  const { titulo, conteudo, categoria } = result.data;
 
   const usuarioId = req.user!.id; // comes from the token, not the body
 
