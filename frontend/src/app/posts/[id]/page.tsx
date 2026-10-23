@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -26,6 +27,25 @@ async function getPost(id: string): Promise<Post | null> {
   }
 
   return res.json();
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const post = await getPost(id);
+
+  if (!post) {
+    return { title: "Post não encontrado" };
+  }
+
+  return {
+    title: post.titulo,
+    // Primeiros 160 caracteres: é o limite prático antes do Google cortar
+    description: post.conteudo.slice(0, 160),
+  };
 }
 
 export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
