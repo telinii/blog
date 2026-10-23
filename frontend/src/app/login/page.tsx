@@ -14,6 +14,13 @@ export default function LoginPage() {
       </p>
 
       <LoginForm />
+
+      <p className="mt-6 text-sm text-gray-600">
+        Ainda não tem conta?{" "}
+        <Link href="/cadastro" className="text-blue-600 hover:underline">
+          Criar conta
+        </Link>
+      </p>
     </main>
   );
 }
