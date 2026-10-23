@@ -45,9 +45,13 @@ export async function listPosts(req: Request, res: Response) {
     // "include: { usuario: true }" brings the author nested inside each post,
     // using the 1:N relation (a post belongs to one user).
     const posts = await prisma.post.findMany({
+      // Mais recente primeiro: sem isso o banco devolve na ordem em que as
+      // linhas foram inseridas, e o post novo cai no fim da lista.
+      orderBy: { data: "desc" },
       include: {
         usuario: {
-          select: { id: true, nome: true, email: true, bio: true },  // No pswd
+          // Nunca devolva email aqui: é endpoint público.
+          select: { id: true, nome: true, bio: true },
         },
       },
     });
@@ -77,7 +81,8 @@ export async function getPost(req: Request, res: Response) {
       where: { id },
       include: {
         usuario: {
-          select: { id: true, nome: true, email: true, bio: true },  // No pswd
+          // Mesmo select do listPosts: sem email, sem senha.
+          select: { id: true, nome: true, bio: true },
         },
       },
     });

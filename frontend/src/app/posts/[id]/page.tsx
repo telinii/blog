@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { formatDate } from "@/lib/format";
 
 type Post = {
   id: number;
@@ -73,7 +74,7 @@ async function PostContent({ params }: { params: Promise<{ id: string }> }) {
     <article className="mt-4">
       <h1 className="text-3xl font-bold">{post.titulo}</h1>
       <p className="text-sm text-gray-500">
-        {post.categoria} · {post.usuario.nome}
+        {post.categoria} · {post.usuario.nome} · {formatDate(post.data)}
       </p>
       <p className="mt-4 whitespace-pre-line">{post.conteudo}</p>
     </article>

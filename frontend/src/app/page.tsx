@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { formatDate } from "@/lib/format";
 
 // Server Component: roda no servidor do Next, não no browser.
 // Por isso o fetch abaixo não sofre CORS e a API_URL não vaza para o cliente.
@@ -58,7 +59,7 @@ async function PostList() {
             </Link>
           </h2>
           <p className="text-sm text-gray-500">
-            {post.categoria} · {post.usuario.nome}
+            {post.categoria} · {post.usuario.nome} · {formatDate(post.data)}
           </p>
           <p className="mt-2">{post.conteudo}</p>
         </li>
