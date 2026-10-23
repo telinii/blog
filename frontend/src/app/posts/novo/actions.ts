@@ -2,8 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-
-const API_URL = process.env.API_URL ?? "http://localhost:3000";
+import { createPost } from "@/lib/api";
 
 type FormState = { erro: string };
 
@@ -29,24 +28,16 @@ export async function createPostAction(
     return { erro: "Preencha todos os campos." };
   }
 
-  const res = await fetch(`${API_URL}/posts`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`, // o backend lê o usuário daqui
-    },
-    body: JSON.stringify(body),
-  });
+  const result = await createPost(token, body);
 
-  if (res.status === 401) {
+  if (!result.ok) {
     // Token inválido/expirado: descarta o cookie velho e pede login de novo
-    cookieStore.delete("token");
-    redirect("/login");
-  }
+    if (result.status === 401) {
+      cookieStore.delete("token");
+      redirect("/login");
+    }
 
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({ erro: "" }));
-    return { erro: data.erro ?? "Não foi possível criar o post." };
+    return { erro: result.erro };
   }
 
   // A home busca os posts a cada acesso (fetch sem cache),

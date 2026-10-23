@@ -2,8 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-
-const API_URL = process.env.API_URL ?? "http://localhost:3000";
+import { login } from "@/lib/api";
 
 type FormState = { erro: string };
 
@@ -20,24 +19,14 @@ export async function loginAction(
     return { erro: "Preencha e-mail e senha." };
   }
 
-  const res = await fetch(`${API_URL}/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, senha }),
-  });
+  const result = await login(email, senha);
 
-  if (res.status === 401) {
-    return { erro: "E-mail ou senha inválidos." };
+  if (!result.ok) {
+    return { erro: result.erro };
   }
-
-  if (!res.ok) {
-    return { erro: "Não foi possível entrar. Tente de novo." };
-  }
-
-  const { token } = await res.json();
 
   const cookieStore = await cookies();
-  cookieStore.set("token", token, {
+  cookieStore.set("token", result.token, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",

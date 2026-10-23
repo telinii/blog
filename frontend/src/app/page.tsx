@@ -2,30 +2,10 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { AuthMenu } from "@/components/auth-menu";
 import { formatDate } from "@/lib/format";
+import { getPosts } from "@/lib/api";
 
 // Server Component: roda no servidor do Next, não no browser.
-// Por isso o fetch abaixo não sofre CORS e a API_URL não vaza para o cliente.
-type Post = {
-  id: number;
-  titulo: string;
-  conteudo: string;
-  categoria: string;
-  publicado: boolean;
-  data: string;
-  usuario: { id: number; nome: string; bio: string };
-};
-
-const API_URL = process.env.API_URL ?? "http://localhost:3000";
-
-async function getPosts(): Promise<Post[]> {
-  const res = await fetch(`${API_URL}/posts`);
-
-  if (!res.ok) {
-    throw new Error(`A API respondeu ${res.status}`);
-  }
-
-  return res.json();
-}
+// Por isso o fetch não sofre CORS e a API_URL não vaza para o cliente.
 
 export default function Home() {
   return (

@@ -3,32 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/format";
-
-type Post = {
-  id: number;
-  titulo: string;
-  conteudo: string;
-  categoria: string;
-  publicado: boolean;
-  data: string;
-  usuario: { id: number; nome: string; bio: string };
-};
-
-const API_URL = process.env.API_URL ?? "http://localhost:3000";
-
-async function getPost(id: string): Promise<Post | null> {
-  const res = await fetch(`${API_URL}/posts/${id}`);
-
-  // 404 = não existe, 400 = id malformado ("abc"). Nos dois casos,
-  // para o usuário o resultado é o mesmo: essa página não existe.
-  if (res.status === 404 || res.status === 400) return null;
-
-  if (!res.ok) {
-    throw new Error(`A API respondeu ${res.status}`);
-  }
-
-  return res.json();
-}
+import { getPost } from "@/lib/api";
 
 export async function generateMetadata({
   params,

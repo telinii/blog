@@ -2,8 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-
-const API_URL = process.env.API_URL ?? "http://localhost:3000";
+import { createUser, login } from "@/lib/api";
 
 type FormState = { erro: string };
 
@@ -22,37 +21,22 @@ export async function registerAction(
     return { erro: "Preencha nome, e-mail e senha." };
   }
 
-  const res = await fetch(`${API_URL}/users`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const created = await createUser(body);
 
-  if (res.status === 409) {
-    return { erro: "Esse e-mail já está cadastrado." };
-  }
-
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({ erro: "" }));
-    return { erro: data.erro ?? "Não foi possível criar a conta." };
+  if (!created.ok) {
+    return { erro: created.erro };
   }
 
   // Conta criada: já entra, para não obrigar a digitar tudo de novo
-  const loginRes = await fetch(`${API_URL}/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: body.email, senha: body.senha }),
-  });
+  const session = await login(body.email, body.senha);
 
-  if (!loginRes.ok) {
+  if (!session.ok) {
     // Cadastro deu certo, mas o login automático falhou: manda logar na mão
     redirect("/login");
   }
 
-  const { token } = await loginRes.json();
-
   const cookieStore = await cookies();
-  cookieStore.set("token", token, {
+  cookieStore.set("token", session.token, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
