@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 
 // Server Component: roda no servidor do Next, não no browser.
 // Por isso o fetch abaixo não sofre CORS e a API_URL não vaza para o cliente.
@@ -43,7 +44,11 @@ async function PostList() {
     <ul className="mt-6 space-y-4">
       {posts.map((post) => (
         <li key={post.id} className="rounded border p-4">
-          <h2 className="text-xl font-semibold">{post.titulo}</h2>
+          <h2 className="text-xl font-semibold">
+            <Link href={`/posts/${post.id}`} className="hover:underline">
+              {post.titulo}
+            </Link>
+          </h2>
           <p className="text-sm text-gray-500">
             {post.categoria} · {post.usuario.nome}
           </p>

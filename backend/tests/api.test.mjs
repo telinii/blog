@@ -239,3 +239,33 @@ test("GET /posts responde 200, traz autor e nunca senha", async () => {
   assert.equal("senha" in created.usuario, false);
   assert.equal(JSON.stringify(body).includes("senha"), false);
 });
+
+test("GET /posts/:id devolve o post com autor e sem senha", async () => {
+  const created = await postAuth(
+    "/posts",
+    { titulo: "Post detalhe", conteudo: "Conteudo", categoria: "Dev" },
+    token,
+  );
+  assert.equal(created.status, 201);
+  const { id } = await created.json();
+
+  const res = await fetch(`${BASE}/posts/${id}`);
+  assert.equal(res.status, 200);
+
+  const post = await res.json();
+  assert.equal(post.id, id);
+  assert.equal(post.titulo, "Post detalhe");
+  assert.equal(post.usuario.id, fixtureId);
+  assert.equal("senha" in post.usuario, false);
+});
+
+test("GET /posts/:id com id inexistente responde 404", async () => {
+  const res = await fetch(`${BASE}/posts/999999`);
+  assert.equal(res.status, 404);
+  assert.equal(typeof (await res.json()).erro, "string");
+});
+
+test("GET /posts/:id com id inválido responde 400", async () => {
+  const res = await fetch(`${BASE}/posts/abc`);
+  assert.equal(res.status, 400);
+});

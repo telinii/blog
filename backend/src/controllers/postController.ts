@@ -61,3 +61,37 @@ export async function listPosts(req: Request, res: Response) {
     res.status(500).json({ erro: "Erro interno no servidor" });
   }
 }
+
+export async function getPost(req: Request, res: Response) {
+  // req.params.id chega sempre como string — é assim que vem da URL
+  const id = Number(req.params.id);
+
+  // "abc" -> NaN, "1.5" -> não é inteiro, "0" e "-3" -> ids impossíveis
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ erro: "ID inválido" });
+    return;
+  }
+
+  try {
+    const post = await prisma.post.findUnique({
+      where: { id },
+      include: {
+        usuario: {
+          select: { id: true, nome: true, email: true, bio: true },  // No pswd
+        },
+      },
+    });
+
+    // findUnique devolve null quando não existe — não lança erro.
+    // Por isso 404 é uma decisão nossa, não um catch de P2025.
+    if (!post) {
+      res.status(404).json({ erro: "Post não encontrado" });
+      return;
+    }
+
+    res.status(200).json(post);
+  } catch (error) {
+    console.error("Erro ao buscar post:", error);
+    res.status(500).json({ erro: "Erro interno no servidor" });
+  }
+}
