@@ -70,7 +70,27 @@ npm run dev
 
 The API will be available at http://localhost:3000
 
-> Note: if the first request returns a `pool timeout` error right after starting the server, it's the Prisma connection pool warming up — just send the request again.
+> Note: if the first request returns a `pool timeout` error, check that MySQL is running (`systemctl status mysqld`). If it is, restart the API — the pool caches the failed connection and does not always recover on its own.
+
+### Automated tests
+
+```
+npm test
+```
+
+The suite starts its own API on port **3100**, pointing at the database in `DATABASE_URL_TEST` (see `.env.example`), applies pending migrations, and kills the server when it finishes. It never touches your development database, and you don't need `npm run dev` running.
+
+Create the test database once:
+
+```
+mysql -u blog_user -p -e "CREATE DATABASE IF NOT EXISTS bloggers_test CHARACTER SET utf8mb4;"
+```
+
+To run the suite against a server that is already up (e.g. a deployed one), set `BASE_URL` — the suite then skips spawning and migrating:
+
+```
+BASE_URL=http://localhost:3000 npm test
+```
 
 ### Testing the API
 

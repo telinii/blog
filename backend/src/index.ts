@@ -53,7 +53,10 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 
 app.use(errorHandler);
 
-// Starts the HTTP server on port 3000
-app.listen(3000, () => {
-  console.log("Servidor rodando na porta 3000");
+// Starts the HTTP server. PORT existe para rodar uma segunda instância
+// (a suíte de testes sobe a própria API numa porta separada).
+const PORT = Number(process.env.PORT ?? 3000);
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });

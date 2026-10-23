@@ -1,14 +1,40 @@
-import test, { before } from "node:test";
+import test, { after, before } from "node:test";
 import assert from "node:assert/strict";
+import { spawn, spawnSync } from "node:child_process";
+import { join } from "node:path";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 
 dotenv.config({ quiet: true });
 
-const BASE = process.env.BASE_URL ?? "http://localhost:3000";
+// Se BASE_URL vier do ambiente, a suíte usa um servidor já no ar.
+// Sem ela, sobe a própria API na 3100 apontando para o banco de teste —
+// assim `npm test` não depende de você ter rodado `npm run dev`.
+const EXTERNAL = Boolean(process.env.BASE_URL);
+const PORT = 3100;
+const BASE = process.env.BASE_URL ?? `http://localhost:${PORT}`;
+const TEST_DB_URL = process.env.DATABASE_URL_TEST;
 const SECRET = process.env.JWT_SECRET;
 
 if (!SECRET) throw new Error("JWT_SECRET não definida: rode os testes na raiz do projeto");
+if (!EXTERNAL && !TEST_DB_URL) {
+  throw new Error("DATABASE_URL_TEST não definida no .env: a suíte precisa de um banco isolado");
+}
+
+let server = null;
+
+async function waitForServer() {
+  for (let i = 0; i < 100; i++) {
+    try {
+      const res = await fetch(`${BASE}/posts`);
+      if (res.status === 200) return;
+    } catch {
+      // servidor ainda subindo
+    }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  throw new Error("A API de teste não subiu em 10s");
+}
 
 // ---------- helpers ----------
 
@@ -49,6 +75,31 @@ function longEmail(total) {
 // ---------- fixtures ----------
 
 before(async () => {
+  if (!EXTERNAL) {
+    // Garante que o banco de teste tem o schema mais recente
+    const migrate = spawnSync(
+      join("node_modules", ".bin", "prisma"),
+      ["migrate", "deploy"],
+      {
+        env: { ...process.env, DATABASE_URL: TEST_DB_URL },
+        encoding: "utf8",
+      },
+    );
+
+    if (migrate.status !== 0) {
+      throw new Error(
+        `prisma migrate deploy falhou no banco de teste:\n${migrate.stdout}\n${migrate.stderr}`,
+      );
+    }
+
+    server = spawn(process.execPath, ["--import", "tsx", "src/index.ts"], {
+      env: { ...process.env, DATABASE_URL: TEST_DB_URL, PORT: String(PORT) },
+      stdio: ["ignore", "ignore", "inherit"],
+    });
+  }
+
+  await waitForServer();
+
   const created = await post("/users", {
     nome: "Fixture", email: fixtureEmail, bio: "usuario de teste", senha,
   });
@@ -58,6 +109,10 @@ before(async () => {
   const login = await post("/login", { email: fixtureEmail, senha });
   assert.equal(login.status, 200, "fixture: POST /login deveria autenticar");
   token = (await login.json()).token;
+});
+
+after(() => {
+  if (server) server.kill();
 });
 
 // ---------- infraestrutura ----------
@@ -119,6 +174,17 @@ test("POST /users com email acima de 191 chars responde 400", async () => {
   });
   assert.equal(res.status, 400);
   assert.equal(typeof (await res.json()).erro, "string");
+});
+
+test("POST /users sem bio responde 201 e grava bio vazia", async () => {
+  const res = await post("/users", {
+    nome: "Sem Bio", email: `sembio.${stamp}@example.com`, senha,
+  });
+  assert.equal(res.status, 201);
+
+  const body = await res.json();
+  assert.equal(body.bio, "");
+  assert.equal("senha" in body, false);
 });
 
 // ---------- login ----------

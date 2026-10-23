@@ -7,7 +7,7 @@ export const userSchema = z
   .object({
     nome: z.string().min(1).max(25),
     email: z.email().min(5).max(191), // 191 = VARCHAR(191) do MySQL
-    bio: z.string().max(250),
+    bio: z.string().max(250).default(""), // opcional: sem ela, grava string vazia
     senha: z.string().min(10).max(20),
   })
   .strict();
