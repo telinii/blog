@@ -28,7 +28,15 @@ async function getPosts(): Promise<Post[]> {
 export default function Home() {
   return (
     <main className="mx-auto max-w-2xl p-8">
-      <h1 className="text-3xl font-bold">Blog</h1>
+      <header className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Blog</h1>
+        <Link
+          href="/posts/novo"
+          className="rounded bg-black px-4 py-2 text-sm text-white"
+        >
+          Novo post
+        </Link>
+      </header>
 
       <Suspense fallback={<PostListSkeleton />}>
         <PostList />
