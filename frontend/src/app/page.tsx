@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { AuthMenu } from "@/components/auth-menu";
 import { formatDate } from "@/lib/format";
 
 // Server Component: roda no servidor do Next, não no browser.
@@ -31,12 +32,9 @@ export default function Home() {
     <main className="mx-auto max-w-2xl p-8">
       <header className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Blog</h1>
-        <Link
-          href="/posts/novo"
-          className="rounded bg-black px-4 py-2 text-sm text-white"
-        >
-          Novo post
-        </Link>
+        <Suspense fallback={<div className="h-8 w-36" />}>
+          <AuthMenu />
+        </Suspense>
       </header>
 
       <Suspense fallback={<PostListSkeleton />}>
