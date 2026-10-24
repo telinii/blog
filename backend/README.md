@@ -1,140 +1,164 @@
-# Blog
-## A RESTful Blog API with JWT authentication — built with TypeScript, Express, Prisma and MySQL
-### Technologies used:
-  ___
-* Typescript 
-* Express
-* Prisma ORM
-* MySQL
-* Joi
-* bcrypt
-* jsonwebtoken (JWT Bearer)
+# Backend — API do Blog
 
-### Security Notes
-* Passwords are hashed with bcrypt (salt rounds: 10) before being stored. Hashing is one-way — the original password cannot be recovered, even by the database owner.
-* The password never leaves the database in any response (`select` without `senha` in `POST /users`/`POST /login`, explicit `select` in `GET /posts`).
-* `POST /login` uses `bcrypt.compare` and returns the same `401 {"erro":"Erro no login"}` for both "email not found" and "wrong password" to avoid leaking information.
-* `POST /login` returns a signed JWT Bearer token (`{ token }`, expires in 1h). Protected routes require `Authorization: Bearer <token>` (checked by `src/middlewares/auth.ts`). The token payload contains the user id, so the server knows who is creating a post.
+API REST de um blog com autenticação JWT, construída com TypeScript, Express 5,
+Prisma 7 e MySQL/MariaDB.
 
-## Getting Started
+> Visão geral do projeto e instruções completas: [`../README.md`](../README.md)
 
-### Prerequisites
-  ___
-* Node.js 22.x (tested with 22.22.3)
-* MySQL 8.x or MariaDB 10.x/11.x running on port 3306
+## Stack
 
-### 1. Set up the database
+- TypeScript + Express 5
+- Prisma ORM 7 (driver adapter `@prisma/adapter-mariadb`)
+- MySQL 8.x ou MariaDB 10.x/11.x
+- Zod (validação, mensagens em pt-BR)
+- bcrypt (hash de senha, 10 rounds)
+- jsonwebtoken (JWT Bearer, HS256, 1h)
 
-Connect to MySQL as root:
+## Estrutura
 
 ```
-mysql -u root -p
+backend/
+├── prisma/
+│   ├── schema.prisma          Models User e Post
+│   └── migrations/            Migrations aplicadas com prisma migrate deploy
+├── src/
+│   ├── index.ts               App Express: middlewares, rotas, 404 e erros
+│   ├── env.ts                 Carrega o .env (dotenv silencioso)
+│   ├── prisma.ts              Singleton do PrismaClient + adapter
+│   ├── controllers/           createUser, login, createPost, listPosts
+│   ├── middlewares/auth.ts    Valida Authorization: Bearer <token>
+│   ├── routes/                Rotas de usuários e posts
+│   ├── schemas/               Schemas Zod (user, login, post)
+│   └── types/                 Tipos do payload JWT e extensão do Request
+└── tests/api.test.mjs         Testes de integração com node:test
 ```
 
-Then run:
+## Requisitos
 
-```sql
-CREATE DATABASE bloggers;
-CREATE USER 'blog_user'@'localhost' IDENTIFIED BY '<YOUR_PASSWORD>';
-GRANT ALL PRIVILEGES ON bloggers.* TO 'blog_user'@'localhost';
-FLUSH PRIVILEGES;
-```
+- Node.js 22.x (testado com 22.22.3)
+- MySQL 8.x ou MariaDB 10.x/11.x na porta `3306`
+- Banco `bloggers` e usuário `blog_user` criados
 
-The `GRANT ... ON bloggers.*` covers everything this project needs. If you also want to use `npx prisma migrate dev` (which creates a temporary shadow database during development), you'll need the global grant instead: `GRANT ALL PRIVILEGES ON *.* TO 'blog_user'@'localhost';`
+## Configuração
 
-> Note: the `FLUSH PRIVILEGES;` is optional since `GRANT` applies immediately in modern MySQL, but it's harmless to keep.
-
-### 2. Configure the environment variables
-
-Copy the example file and fill in your secrets:
-
-```
+```bash
+npm install
 cp .env.example .env
 ```
 
-Then edit `.env` and replace `<YOUR_PASSWORD>` and `<YOUR_JWT_SECRET>` (generate a strong secret, e.g. `openssl rand -base64 32`).
+Preencha `backend/.env`:
 
-### 3. Install dependencies and set up the database
-
+```dotenv
+DATABASE_URL="mysql://blog_user:SUA_SENHA@localhost:3306/bloggers"
+JWT_SECRET="uma-string-longa-e-aleatoria"
 ```
-npm install
+
+Gere o segredo com `openssl rand -base64 32`.
+
+Depois:
+
+```bash
 npx prisma generate
 npx prisma migrate deploy
 ```
 
-### 4. Run the server
+## Rodando
 
-```
+```bash
 npm run dev
 ```
 
-The API will be available at http://localhost:3000
+API em **http://localhost:3000**.
 
-> Note: if the first request returns a `pool timeout` error, check that MySQL is running (`systemctl status mysqld`). If it is, restart the API — the pool caches the failed connection and does not always recover on its own.
+Scripts:
 
-### Automated tests
+| Comando | Descrição |
+| --- | --- |
+| `npm run dev` | Sobe com `tsx` (watch) |
+| `npm test` | Roda os testes de integração (API precisa estar rodando) |
+| `npm run build` | `prisma generate` + compilação TypeScript |
+| `npm start` | Executa `dist/index.js` |
 
+## Endpoints
+
+| Método | Rota | Auth | Descrição |
+| --- | --- | --- | --- |
+| `GET` | `/` | — | Health check |
+| `POST` | `/users` | — | Cria usuário (retorna sem `senha`) |
+| `POST` | `/login` | — | Retorna `{ token }` |
+| `POST` | `/posts` | Bearer | Cria post (autor vem do token) |
+| `GET` | `/posts` | — | Lista posts com autor (sem `senha`) |
+
+### Validação
+
+- `POST /users`: `nome` 1–25, `email` válido até 191, `bio` até 250,
+  `senha` 10–20. Campos desconhecidos → `400`.
+- `POST /login`: `email` e `senha` nos mesmos limites.
+- `POST /posts`: `titulo` 1–100, `conteudo` 1–5000, `categoria` 1–50.
+  `publicado` e `data` são definidos pelo servidor.
+
+### Erros
+
+- `400` — validação ou JSON inválido
+- `401` — token ausente, inválido ou credenciais erradas
+- `404` — rota inexistente (JSON)
+- `409` — e-mail já cadastrado
+- `413` — body acima de 100kb
+- `500` — erro interno genérico, sem stack trace
+
+## Testando a API
+
+### Insomnia / Postman
+
+1. `POST http://localhost:3000/users` com
+   `{"nome":"Maria","email":"maria@example.com","bio":"Learning dev","senha":"senha12345"}`
+2. `POST http://localhost:3000/login` com e-mail e senha → copie o `token`
+3. `POST http://localhost:3000/posts` → Auth → Bearer Token → `{"titulo":"...","conteudo":"...","categoria":"Dev"}`
+4. `GET http://localhost:3000/posts`
+
+### curl
+
+```bash
+curl -X POST http://localhost:3000/users \
+  -H "Content-Type: application/json" \
+  -d '{"nome":"Maria","email":"maria@example.com","bio":"Learning dev","senha":"senha12345"}'
+
+curl -X POST http://localhost:3000/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"maria@example.com","senha":"senha12345"}'
+
+TOKEN=$(curl -s -X POST http://localhost:3000/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"maria@example.com","senha":"senha12345"}' \
+  | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+curl -X POST http://localhost:3000/posts \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"titulo":"Meu post","conteudo":"Conteúdo","categoria":"Dev"}'
+
+curl http://localhost:3000/posts
 ```
+
+## Testes
+
+Com a API rodando:
+
+```bash
 npm test
 ```
 
-The suite starts its own API on port **3100**, pointing at the database in `DATABASE_URL_TEST` (see `.env.example`), applies pending migrations, and kills the server when it finishes. It never touches your development database, and you don't need `npm run dev` running.
+A suíte cria usuários e posts reais no banco e valida cadastro, login,
+autenticação (incluindo algoritmo errado, token sem `id` e `bearer` minúsculo),
+validação e listagem sem vazamento de senha.
 
-Create the test database once:
+Variáveis opcionais: `BASE_URL` (padrão `http://localhost:3000`) e
+`JWT_SECRET` (lida do `.env`).
 
-```
-mysql -u blog_user -p -e "CREATE DATABASE IF NOT EXISTS bloggers_test CHARACTER SET utf8mb4;"
-```
+## Segurança
 
-To run the suite against a server that is already up (e.g. a deployed one), set `BASE_URL` — the suite then skips spawning and migrating:
-
-```
-BASE_URL=http://localhost:3000 npm test
-```
-
-### Testing the API
-
-#### Testing with Insomnia (recommended)
-
-1. Create a Request Collection (e.g. `Blog`).
-2. **POST /users:** `POST http://localhost:3000/users` → `Body` → `JSON` → `{"nome":"<YOUR_NAME>","email":"<YOUR_EMAIL>","bio":"<YOUR_BIO>","senha":"<YOUR_PASSWORD>"}` → `Send` → `201` without `senha`.
-3. **POST /login:** `POST http://localhost:3000/login` → `Body` `JSON` → `{"email":"<YOUR_EMAIL>","senha":"<YOUR_PASSWORD>"}` → `Send` → copy `token`.
-4. **POST /posts (protected):** `POST http://localhost:3000/posts` → `Auth` → `Bearer Token` → paste `token` → `Body` `JSON` → `{"titulo":"<YOUR_TITLE>","conteudo":"<YOUR_CONTENT>","categoria":"<YOUR_CATEGORY>"}` → `Send` → `201`.
-5. **GET /posts:** `GET http://localhost:3000/posts` → `Send` → list without `senha`.
-
-For the deployed API, replace `http://localhost:3000` with your Railway URL (e.g. `https://<YOUR_RAILWAY_URL>.up.railway.app`).
-
-#### Testing with curl (alternative)
-
-Create a user (the password must be 10-20 characters long):
-
-```
-curl -X POST http://localhost:3000/users -H "Content-Type: application/json" -d '{"nome":"<YOUR_NAME>","email":"<YOUR_EMAIL>","bio":"<YOUR_BIO>","senha":"<YOUR_PASSWORD>"}'
-# Example: {"nome":"Maria","email":"maria@example.com","bio":"Learning dev","senha":"senha12345"}
-```
-
-> Note: if you run this again, use a different `email` (it must be unique). The password is stored as a bcrypt hash and never returned in any response.
-
-Login (returns `{ token }` on success, 401 with `{"erro":"Erro no login"}` on any failure — email not found or wrong password — without revealing which field is incorrect):
-
-```
-curl -X POST http://localhost:3000/login -H "Content-Type: application/json" -d '{"email":"<YOUR_EMAIL>","senha":"<YOUR_PASSWORD>"}'
-# -> {"token":"eyJhbGciOiJIUzI1NiIs..."}
-```
-
-Create a post (requires Bearer token — the author is taken from the token, not from the body):
-
-```
-# For bash/zsh:
-TOKEN=$(curl -s -X POST http://localhost:3000/login -H "Content-Type: application/json" -d '{"email":"<YOUR_EMAIL>","senha":"<YOUR_PASSWORD>"}' | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
-# For fish:
-# set TOKEN (curl -s -X POST http://localhost:3000/login -H "Content-Type: application/json" -d '{"email":"<YOUR_EMAIL>","senha":"<YOUR_PASSWORD>"}' | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
-
-curl -X POST http://localhost:3000/posts -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" -d '{"titulo":"<YOUR_TITLE>","conteudo":"<YOUR_CONTENT>","categoria":"<YOUR_CATEGORY>"}'
-```
-
-List all posts with their authors:
-
-```
-curl http://localhost:3000/posts
-```
+- Senha hasheada com bcrypt (10 rounds), nunca retornada em resposta.
+- Login com resposta idêntica para e-mail inexistente e senha errada.
+- JWT HS256 com expiração de 1h; algoritmo fixado no `verify`.
+- Autor do post vem do token, nunca do body (campo `usuarioId` é rejeitado).
+- Erros inesperados retornam JSON genérico, sem stack trace.

@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend — Blog
 
-## Getting Started
+Interface web do blog, construída com Next.js 16 (App Router), React 19 e
+Tailwind CSS 4.
 
-First, run the development server:
+> Visão geral do projeto e instruções completas: [`../README.md`](../README.md)
+
+## Requisitos
+
+- Node.js 22.x
+- API do blog rodando (veja `backend/README.md`)
+
+## Configuração
+
+```bash
+npm install
+```
+
+Opcional — para apontar para outra API, crie `frontend/.env.local`:
+
+```dotenv
+API_URL="http://localhost:3000"
+```
+
+Sem essa variável, o padrão é `http://localhost:3000`.
+
+A variável é lida no servidor (Server Component), então não é exposta ao
+browser e não há CORS envolvido.
+
+## Rodando
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse **http://localhost:3001**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> A porta é fixa em `3001` nos scripts `dev` e `start`, para não conflitar com a
+> API na porta `3000`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+| Comando | Descrição |
+| --- | --- |
+| `npm run dev` | Servidor de desenvolvimento em `http://localhost:3001` |
+| `npm run build` | Build de produção |
+| `npm start` | Serve o build em `http://localhost:3001` |
+| `npm run lint` | ESLint |
 
-To learn more about Next.js, take a look at the following resources:
+## Estrutura
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+frontend/
+├── src/app/
+│   ├── layout.tsx       Layout raiz
+│   ├── page.tsx         Listagem de posts (Server Component)
+│   ├── globals.css      Tailwind
+│   └── favicon.ico
+├── next.config.ts       cacheComponents, prefetching e loader do Tailwind
+└── tsconfig.json
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Como funciona
 
-## Deploy on Vercel
+`src/app/page.tsx` é um Server Component: ele faz `fetch` em `${API_URL}/posts`
+no servidor do Next e renderiza a lista com Suspense/skeleton. Cada post mostra
+título, categoria, autor e conteúdo. A resposta da API já vem sem a senha do
+autor.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Solução de problemas
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Problema | Solução |
+| --- | --- |
+| Página sem posts | Confirme que o backend está em `http://localhost:3000` |
+| `fetch failed` / erro 500 na página | API fora do ar ou `API_URL` incorreta |
+| Porta 3001 ocupada | Encerre o processo anterior (`pkill -f 'next dev'`) |
+| Mudou `API_URL` e não refletiu | Reinicie o `npm run dev` |

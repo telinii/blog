@@ -1,0 +1,261 @@
+# Blog
+
+Aplicação de blog full stack: API REST com autenticação JWT + interface web em Next.js.
+
+O projeto é dividido em dois apps independentes:
+
+```
+blog/
+├── backend/    API REST (Express + TypeScript + Prisma + MariaDB/MySQL)
+└── frontend/   Interface web (Next.js + React + Tailwind CSS)
+```
+
+## Stack
+
+| Camada | Tecnologias |
+| --- | --- |
+| Backend | Node.js, TypeScript, Express 5, Prisma 7, MariaDB/MySQL, Zod, bcrypt, JSON Web Token |
+| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS 4, TypeScript |
+| Testes | `node:test` (suíte de integração da API) |
+
+## Funcionalidades
+
+- Cadastro de usuários com senha hasheada (bcrypt, 10 rounds)
+- Login com emissão de token JWT (HS256, expira em 1h)
+- Criação de posts protegida por autenticação Bearer
+- Listagem pública de posts com os dados do autor (nunca a senha)
+- Validação de entrada com Zod e mensagens de erro em português
+- Frontend renderizando a listagem de posts no servidor (Server Component)
+
+## Requisitos
+
+- **Node.js 22.x** (testado com 22.22.3)
+- **npm** 10.x
+- **MySQL 8.x** ou **MariaDB 10.x/11.x** rodando na porta `3306`
+- Git
+
+## Como rodar o projeto
+
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/telinii/blog.git
+cd blog
+```
+
+### 2. Crie o banco de dados
+
+Conecte no MySQL/MariaDB como root:
+
+```bash
+mysql -u root -p
+```
+
+E execute:
+
+```sql
+CREATE DATABASE IF NOT EXISTS bloggers;
+CREATE USER IF NOT EXISTS 'blog_user'@'localhost' IDENTIFIED BY 'SUA_SENHA';
+GRANT ALL PRIVILEGES ON bloggers.* TO 'blog_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+> Para usar `npx prisma migrate dev` em desenvolvimento (ele cria um banco
+> temporário de shadow), conceda privilégio global:
+> `GRANT ALL PRIVILEGES ON *.* TO 'blog_user'@'localhost';`
+> Para apenas rodar o projeto, o grant em `bloggers.*` já basta.
+
+### 3. Configure o backend
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+Edite `backend/.env`:
+
+```dotenv
+DATABASE_URL="mysql://blog_user:SUA_SENHA@localhost:3306/bloggers"
+JWT_SECRET="uma-string-longa-e-aleatoria"
+```
+
+Gere um segredo forte com:
+
+```bash
+openssl rand -base64 32
+```
+
+> Use a senha real do usuário `blog_user` na `DATABASE_URL`. Se ela tiver
+> caracteres especiais (`@`, `:`, `/`, `#`), eles precisam ser
+> percent-encoded na URL.
+
+### 4. Instale as dependências e prepare o banco
+
+```bash
+# dentro de backend/
+npm install
+npx prisma generate
+npx prisma migrate deploy
+```
+
+- `prisma generate` cria o Prisma Client em `src/generated/prisma`.
+- `prisma migrate deploy` aplica as migrations e cria as tabelas.
+
+### 5. Suba a API (terminal 1)
+
+```bash
+cd backend
+npm run dev
+```
+
+A API ficará disponível em **http://localhost:3000**.
+
+Verifique:
+
+```bash
+curl http://localhost:3000
+# {"message":"API Blog online","endpoints":["/users","/login","/posts"]}
+```
+
+> Na primeira requisição pode aparecer um `pool timeout`: é o pool de conexões
+> do Prisma aquecendo. Basta repetir a requisição.
+
+### 6. Suba o frontend (terminal 2)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+A interface ficará disponível em **http://localhost:3001**.
+
+O frontend consome a API em `http://localhost:3000` por padrão. Para apontar
+para outra URL, crie `frontend/.env.local`:
+
+```dotenv
+API_URL="http://localhost:3000"
+```
+
+> `API_URL` é lida apenas no servidor (Server Component), então não é exposta
+> ao browser e não sofre CORS.
+
+## Endpoints da API
+
+Base: `http://localhost:3000`
+
+| Método | Rota | Autenticação | Descrição |
+| --- | --- | --- | --- |
+| `GET` | `/` | — | Health check |
+| `POST` | `/users` | — | Cria um usuário |
+| `POST` | `/login` | — | Autentica e retorna `{ token }` |
+| `POST` | `/posts` | Bearer token | Cria um post |
+| `GET` | `/posts` | — | Lista posts com o autor |
+
+### Exemplos com curl
+
+Criar usuário (senha de 10 a 20 caracteres):
+
+```bash
+curl -X POST http://localhost:3000/users \
+  -H "Content-Type: application/json" \
+  -d '{"nome":"Maria","email":"maria@example.com","bio":"Learning dev","senha":"senha12345"}'
+```
+
+Login:
+
+```bash
+curl -X POST http://localhost:3000/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"maria@example.com","senha":"senha12345"}'
+# {"token":"eyJhbGciOiJIUzI1NiIs..."}
+```
+
+Criar post (o autor vem do token, não do body):
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:3000/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"maria@example.com","senha":"senha12345"}' \
+  | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+curl -X POST http://localhost:3000/posts \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"titulo":"Meu primeiro post","conteudo":"Conteúdo do post","categoria":"Dev"}'
+```
+
+Listar posts:
+
+```bash
+curl http://localhost:3000/posts
+```
+
+## Testes
+
+Os testes são de integração e precisam da API rodando:
+
+```bash
+# terminal 1
+cd backend
+npm run dev
+
+# terminal 2
+cd backend
+npm test
+```
+
+Variáveis opcionais:
+
+- `BASE_URL` — URL da API (padrão `http://localhost:3000`)
+- `JWT_SECRET` — lida do `backend/.env`
+
+A suíte cobre cadastro, login, autenticação, validação, criação e listagem de
+posts, incluindo casos de segurança (senha nunca retornada, mensagens de erro
+genéricas no login, algoritmo do token fixado em HS256).
+
+## Segurança
+
+- Senhas são hasheadas com bcrypt (10 rounds) antes de ir para o banco.
+- Nenhuma resposta retorna o campo `senha`.
+- `POST /login` responde `401 {"erro":"Erro no login"}` tanto para e-mail
+  inexistente quanto para senha errada, sem revelar qual falhou.
+- Rotas protegidas exigem `Authorization: Bearer <token>`.
+- O middleware fixa o algoritmo `HS256` e exige um `id` numérico no payload.
+
+## Scripts
+
+### Backend (`backend/`)
+
+| Comando | Descrição |
+| --- | --- |
+| `npm run dev` | Sobe a API com `tsx` em modo watch |
+| `npm test` | Roda a suíte de integração |
+| `npm run build` | Gera o Prisma Client e compila para `dist/` |
+| `npm start` | Roda a versão compilada |
+
+### Frontend (`frontend/`)
+
+| Comando | Descrição |
+| --- | --- |
+| `npm run dev` | Sobe o Next.js em `http://localhost:3001` |
+| `npm run build` | Build de produção |
+| `npm start` | Serve o build em `http://localhost:3001` |
+| `npm run lint` | Roda o ESLint |
+
+## Solução de problemas
+
+| Problema | Causa provável | Solução |
+| --- | --- | --- |
+| `JWT_SECRET não está definida no .env` | `backend/.env` ausente ou incompleto | Criar o `.env` a partir de `.env.example` |
+| `DATABASE_URL não está definida no .env` | Variável ausente | Conferir `backend/.env` |
+| `pool timeout` na primeira request | Pool do Prisma aquecendo | Repetir a requisição |
+| `Can't reach database server` | MySQL/MariaDB parado ou porta errada | Iniciar o serviço e conferir a porta `3306` |
+| Frontend sem posts | API parada ou `API_URL` errada | Subir o backend e conferir `frontend/.env.local` |
+| `Email já cadastrado` | E-mail duplicado | Usar outro e-mail |
+| Erro de migration por permissão | Falta de grant para shadow database | `GRANT ALL PRIVILEGES ON *.* TO 'blog_user'@'localhost';` |
+
+## Documentação adicional
+
+- [`backend/README.md`](backend/README.md) — detalhes da API
+- [`frontend/README.md`](frontend/README.md) — detalhes do frontend
