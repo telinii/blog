@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CategoryArt } from "@/components/category-art";
 import { formatDate } from "@/lib/format";
 import { getPost } from "@/lib/api";
 
@@ -50,7 +51,14 @@ async function PostContent({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <article className="mt-6">
-      <span className="inline-block rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
+      <div className="overflow-hidden rounded-2xl border border-line shadow-[0_24px_50px_-34px_rgba(27,26,23,0.45)]">
+        <CategoryArt
+          categoria={post.categoria}
+          className="aspect-[16/9] sm:aspect-[21/9]"
+        />
+      </div>
+
+      <span className="mt-7 inline-block rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
         {post.categoria}
       </span>
 
@@ -83,7 +91,8 @@ async function PostContent({ params }: { params: Promise<{ id: string }> }) {
 function PostSkeleton() {
   return (
     <div className="mt-6 animate-pulse">
-      <div className="h-5 w-24 rounded-full bg-line/70" />
+      <div className="aspect-[16/9] rounded-2xl bg-line/60 sm:aspect-[21/9]" />
+      <div className="mt-7 h-5 w-24 rounded-full bg-line/70" />
       <div className="mt-4 h-9 w-3/4 rounded bg-line/70" />
       <div className="mt-6 h-10 w-48 rounded bg-line/50" />
       <div className="mt-8 h-4 w-full rounded bg-line/50" />
