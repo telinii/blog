@@ -196,23 +196,23 @@ curl http://localhost:3000/posts
 Os testes são de integração e precisam da API rodando:
 
 ```bash
-# terminal 1
-cd backend
-npm run dev
-
-# terminal 2
 cd backend
 npm test
 ```
 
+A suíte aplica as migrations no banco de `DATABASE_URL_TEST` (`bloggers_test`),
+sobe a própria API na porta 3100 e derruba no fim. Não precisa de `npm run dev`
+rodando e não encosta no banco de desenvolvimento.
+
 Variáveis opcionais:
 
-- `BASE_URL` — URL da API (padrão `http://localhost:3000`)
+- `BASE_URL` — usa um servidor já no ar e pula o spawn e as migrations
 - `JWT_SECRET` — lida do `backend/.env`
 
 A suíte cobre cadastro, login, autenticação, validação, criação e listagem de
-posts, incluindo casos de segurança (senha nunca retornada, mensagens de erro
-genéricas no login, algoritmo do token fixado em HS256).
+posts, rate limit (`429` após o limite) e casos de segurança (senha nunca
+retornada, mensagens de erro genéricas no login, algoritmo do token fixado em
+HS256).
 
 ## Segurança
 
@@ -222,6 +222,7 @@ genéricas no login, algoritmo do token fixado em HS256).
   inexistente quanto para senha errada, sem revelar qual falhou.
 - Rotas protegidas exigem `Authorization: Bearer <token>`.
 - O middleware fixa o algoritmo `HS256` e exige um `id` numérico no payload.
+- Rate limit por IP: login 5/15min, cadastro 10/hora.
 
 ## Scripts
 
@@ -230,7 +231,7 @@ genéricas no login, algoritmo do token fixado em HS256).
 | Comando | Descrição |
 | --- | --- |
 | `npm run dev` | Sobe a API com `tsx` em modo watch |
-| `npm test` | Roda a suíte de integração |
+| `npm test` | Sobe a API de teste na 3100 e roda a suíte |
 | `npm run build` | Gera o Prisma Client e compila para `dist/` |
 | `npm start` | Roda a versão compilada |
 

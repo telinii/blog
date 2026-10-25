@@ -27,10 +27,11 @@ backend/
 │   ├── prisma.ts              Singleton do PrismaClient + adapter
 │   ├── controllers/           createUser, login, createPost, listPosts
 │   ├── middlewares/auth.ts    Valida Authorization: Bearer <token>
+│   ├── middlewares/rateLimit.ts  Limite de tentativas de login e cadastro
 │   ├── routes/                Rotas de usuários e posts
 │   ├── schemas/               Schemas Zod (user, login, post)
 │   └── types/                 Tipos do payload JWT e extensão do Request
-└── tests/api.test.mjs         Testes de integração com node:test
+└── tests/                     Testes de integração com node:test
 ```
 
 ## Requisitos
@@ -50,10 +51,17 @@ Preencha `backend/.env`:
 
 ```dotenv
 DATABASE_URL="mysql://blog_user:SUA_SENHA@localhost:3306/bloggers"
+DATABASE_URL_TEST="mysql://blog_user:SUA_SENHA@localhost:3306/bloggers_test"
 JWT_SECRET="uma-string-longa-e-aleatoria"
 ```
 
 Gere o segredo com `openssl rand -base64 32`.
+
+Crie o banco de teste uma vez (a suíte aplica as migrations nele sozinha):
+
+```bash
+mysql -u blog_user -p -e "CREATE DATABASE IF NOT EXISTS bloggers_test CHARACTER SET utf8mb4;"
+```
 
 Depois:
 
@@ -75,7 +83,7 @@ Scripts:
 | Comando | Descrição |
 | --- | --- |
 | `npm run dev` | Sobe com `tsx` (watch) |
-| `npm test` | Roda os testes de integração (API precisa estar rodando) |
+| `npm test` | Sobe a API na 3100 com o banco de teste e roda a suíte |
 | `npm run build` | `prisma generate` + compilação TypeScript |
 | `npm start` | Executa `dist/index.js` |
 
@@ -97,6 +105,21 @@ Scripts:
 - `POST /posts`: `titulo` 1–100, `conteudo` 1–5000, `categoria` 1–50.
   `publicado` e `data` são definidos pelo servidor.
 
+### Rate limit
+
+`POST /login`: 5 tentativas por IP a cada 15 minutos. `POST /users`: 10
+cadastros por IP por hora. Passou disso, a resposta é `429` com
+`{ "erro": ... }` e o header `Retry-After`.
+
+Os contadores ficam em memória: reiniciar a API zera e cada instância tem o
+seu (com mais de uma instância, troque o store por um compartilhado). Ajuste
+com `LOGIN_RATE_LIMIT_MAX` e `CADASTRO_RATE_LIMIT_MAX`.
+
+Atrás de proxy, defina `TRUST_PROXY=1` para o Express usar o IP de
+`X-Forwarded-For`. Sem isso todo request parece vir do mesmo IP e o limite
+derruba todos juntos. Não defina sem um proxy na frente: o header passa a ser
+aceito e qualquer cliente falsifica o IP para escapar do limite.
+
 ### Erros
 
 - `400` — validação ou JSON inválido
@@ -104,6 +127,7 @@ Scripts:
 - `404` — rota inexistente (JSON)
 - `409` — e-mail já cadastrado
 - `413` — body acima de 100kb
+- `429` — rate limit de login ou cadastro excedido
 - `500` — erro interno genérico, sem stack trace
 
 ## Testando a API
@@ -142,18 +166,21 @@ curl http://localhost:3000/posts
 
 ## Testes
 
-Com a API rodando:
-
 ```bash
 npm test
 ```
 
-A suíte cria usuários e posts reais no banco e valida cadastro, login,
-autenticação (incluindo algoritmo errado, token sem `id` e `bearer` minúsculo),
-validação e listagem sem vazamento de senha.
+A suíte se vira sozinha: aplica as migrations no banco de `DATABASE_URL_TEST`,
+sobe uma API na porta 3100 apontando para ele, roda os testes e derruba o
+servidor no fim. Não encosta no banco de desenvolvimento e não precisa de
+`npm run dev` rodando.
 
-Variáveis opcionais: `BASE_URL` (padrão `http://localhost:3000`) e
-`JWT_SECRET` (lida do `.env`).
+Os testes de rate limit sobem outra instância, na 3101, com limites baixos
+(`LOGIN_RATE_LIMIT_MAX=2`, `CADASTRO_RATE_LIMIT_MAX=2`), e conferem o `429`.
+A suíte principal roda com `NODE_ENV=test`, onde o limiter fica desligado.
+
+Variáveis opcionais: `BASE_URL` (usa um servidor já no ar e pula o spawn e as
+migrations) e `JWT_SECRET` (lida do `.env`).
 
 ## Segurança
 
@@ -161,4 +188,5 @@ Variáveis opcionais: `BASE_URL` (padrão `http://localhost:3000`) e
 - Login com resposta idêntica para e-mail inexistente e senha errada.
 - JWT HS256 com expiração de 1h; algoritmo fixado no `verify`.
 - Autor do post vem do token, nunca do body (campo `usuarioId` é rejeitado).
+- Rate limit por IP no login (5/15min) e no cadastro (10/hora).
 - Erros inesperados retornam JSON genérico, sem stack trace.

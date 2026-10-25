@@ -13,6 +13,14 @@ if (!process.env.JWT_SECRET) {
 // Creates the Express application
 const app = express();
 
+// Atrás de um proxy (Railway, Nginx...) o IP real do cliente chega em
+// X-Forwarded-For. Sem isto todo mundo parece vir do mesmo IP e o rate limit
+// derruba todos juntos. Só liga com TRUST_PROXY=1: aceitar esse header sem um
+// proxy na frente deixa qualquer cliente falsificar o IP e escapar do limite.
+if (process.env.TRUST_PROXY === "1") {
+  app.set("trust proxy", 1);
+}
+
 // express.json() parses JSON bodies sent by clients into req.body.
 // IMPORTANT: it must come BEFORE the routes, otherwise req.body arrives undefined.
 app.use(express.json());

@@ -93,7 +93,13 @@ before(async () => {
     }
 
     server = spawn(process.execPath, ["--import", "tsx", "src/index.ts"], {
-      env: { ...process.env, DATABASE_URL: TEST_DB_URL, PORT: String(PORT) },
+      // NODE_ENV=test desliga o rate limit: a suíte faz muitos logins seguidos
+      env: {
+        ...process.env,
+        DATABASE_URL: TEST_DB_URL,
+        PORT: String(PORT),
+        NODE_ENV: "test",
+      },
       stdio: ["ignore", "ignore", "inherit"],
     });
   }
