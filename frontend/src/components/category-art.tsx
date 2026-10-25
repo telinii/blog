@@ -3,6 +3,9 @@ import { temaDaCategoria } from "@/lib/category-theme";
 // Arte decorativa da categoria: gradiente + formas geométricas em SVG.
 // Nada de arquivo de imagem, nada de request externo — só a paleta do site.
 //
+// As cores vêm de variáveis CSS (`--art-<tema>-de`, `-ate`, `-forma`), então
+// a mesma arte troca de paleta sozinha quando o tema escuro entra.
+//
 // Os ids de <defs> repetem quando a mesma categoria aparece várias vezes na
 // página. Isso é intencional: o conteúdo do def é idêntico, então o browser
 // reaproveita o primeiro e o resultado é o mesmo.
@@ -15,6 +18,9 @@ export function CategoryArt({
 }) {
   const tema = temaDaCategoria(categoria);
   const id = `art-${tema.chave}`;
+  const de = `var(--art-${tema.chave}-de)`;
+  const ate = `var(--art-${tema.chave}-ate)`;
+  const cor = `var(--art-${tema.chave}-forma)`;
 
   return (
     <div aria-hidden className={`relative ${className}`}>
@@ -25,16 +31,16 @@ export function CategoryArt({
       >
         <defs>
           <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor={tema.de} />
-            <stop offset="100%" stopColor={tema.ate} />
+            <stop offset="0%" stopColor={de} />
+            <stop offset="100%" stopColor={ate} />
           </linearGradient>
         </defs>
 
         <rect width="400" height="300" fill={`url(#${id}-bg)`} />
-        <Formas variante={tema.variante} cor={tema.forma} />
+        <Formas variante={tema.variante} cor={cor} />
       </svg>
 
-      <div className="grain pointer-events-none absolute inset-0 opacity-[0.07] mix-blend-multiply" />
+      <div className="grain pointer-events-none absolute inset-0 opacity-[0.09] mix-blend-overlay" />
     </div>
   );
 }

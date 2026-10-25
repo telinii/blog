@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { AuthMenu } from "@/components/auth-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 // Header fixo, compartilhado por todas as páginas.
 // O AuthMenu lê o cookie do login, então precisa estar dentro de um <Suspense>
@@ -16,9 +17,13 @@ export function SiteHeader() {
           Blog<span className="text-accent">.</span>
         </Link>
 
-        <Suspense fallback={<div className="h-9 w-40" />}>
-          <AuthMenu />
-        </Suspense>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+
+          <Suspense fallback={<div className="h-9 w-40" />}>
+            <AuthMenu />
+          </Suspense>
+        </div>
       </div>
     </header>
   );

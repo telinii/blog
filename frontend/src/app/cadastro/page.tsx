@@ -11,7 +11,7 @@ export default function RegisterPage() {
         ← Voltar para a home
       </Link>
 
-      <div className="mt-6 rounded-2xl border border-line bg-surface p-7 shadow-[0_1px_2px_rgba(27,26,23,0.04)] sm:p-8">
+      <div className="mt-6 rounded-2xl border border-line bg-surface p-7 shadow-[0_1px_2px_rgba(0,0,0,0.04)] sm:p-8">
         <h1 className="font-serif text-3xl font-semibold tracking-tight">
           Criar conta
         </h1>

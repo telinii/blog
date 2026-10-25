@@ -1,5 +1,5 @@
-// Fundo do site: camadas fixas atrás do conteúdo. Nada de imagem externa por
-// padrão — gradientes quentes + traços finos + grão, tudo na mesma paleta.
+// Fundo do site: camadas fixas atrás do conteúdo. As cores vêm de variáveis
+// CSS (globals.css), então claro e escuro mudam juntos.
 //
 // Para usar uma foto temática, coloque o arquivo em `public/imagens/` e passe
 // o caminho: <BlogBackground imagem="/imagens/fundo.webp" />. A foto entra
@@ -11,10 +11,10 @@ export function BlogBackground({ imagem }: { imagem?: string }) {
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
     >
       {/* Mancha quente no canto superior direito */}
-      <div className="absolute inset-0 bg-[radial-gradient(120%_85%_at_88%_-12%,#f4d9b4_0%,transparent_58%)] opacity-80" />
+      <div className="absolute inset-0 bg-[radial-gradient(120%_85%_at_88%_-12%,var(--bg-glow-1)_0%,transparent_58%)] opacity-80" />
 
       {/* Mancha argila no canto inferior esquerdo */}
-      <div className="absolute inset-0 bg-[radial-gradient(95%_75%_at_-12%_104%,#e9cdbd_0%,transparent_58%)] opacity-70" />
+      <div className="absolute inset-0 bg-[radial-gradient(95%_75%_at_-12%_104%,var(--bg-glow-2)_0%,transparent_58%)] opacity-70" />
 
       {/* Traços finos, quase invisíveis, para o fundo não ficar chapado */}
       <svg
@@ -22,7 +22,12 @@ export function BlogBackground({ imagem }: { imagem?: string }) {
         preserveAspectRatio="xMidYMid slice"
         className="absolute inset-0 h-full w-full"
       >
-        <g fill="none" stroke="#8a6a4b" strokeWidth="1" opacity="0.045">
+        <g
+          fill="none"
+          stroke="var(--bg-stroke)"
+          strokeWidth="1"
+          opacity="0.06"
+        >
           <circle cx="1180" cy="120" r="280" />
           <circle cx="1180" cy="120" r="420" />
           <circle cx="1180" cy="120" r="560" />
@@ -40,7 +45,7 @@ export function BlogBackground({ imagem }: { imagem?: string }) {
       )}
 
       {/* Grão: tira o aspecto de gradiente liso */}
-      <div className="grain absolute inset-0 opacity-[0.06] mix-blend-multiply" />
+      <div className="grain absolute inset-0 opacity-[0.07] mix-blend-overlay" />
     </div>
   );
 }

@@ -24,7 +24,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="relative overflow-hidden rounded-3xl border border-line shadow-[0_24px_50px_-32px_rgba(27,26,23,0.45)]">
+        <div className="relative overflow-hidden rounded-3xl border border-line shadow-[0_24px_50px_-32px_rgba(0,0,0,0.45)]">
           <CategoryArt
             categoria="dev"
             className="aspect-[4/3] md:aspect-[4/5]"

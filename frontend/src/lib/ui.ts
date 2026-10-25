@@ -10,10 +10,11 @@ export const inputClass =
 
 export const buttonClass =
   "inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2.5 " +
-  "text-sm font-medium text-white transition-colors " +
+  "text-sm font-medium text-on-accent transition-colors " +
   "hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60";
 
 export const errorClass =
-  "rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700";
+  "rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 " +
+  "dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300";
 
 export const hintClass = "mt-1.5 block text-xs text-muted";

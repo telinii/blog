@@ -51,7 +51,7 @@ async function PostContent({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <article className="mt-6">
-      <div className="overflow-hidden rounded-2xl border border-line shadow-[0_24px_50px_-34px_rgba(27,26,23,0.45)]">
+      <div className="overflow-hidden rounded-2xl border border-line shadow-[0_24px_50px_-34px_rgba(0,0,0,0.45)]">
         <CategoryArt
           categoria={post.categoria}
           className="aspect-[16/9] sm:aspect-[21/9]"

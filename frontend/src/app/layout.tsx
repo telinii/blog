@@ -27,9 +27,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="pt-BR"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        {/* Roda antes do resto do body: evita abrir claro e piscar escuro.
+            localStorage manda; sem escolha salva, segue o sistema. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var salvo=localStorage.getItem("tema");var sistema=window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.dataset.theme=salvo||(sistema?"dark":"light")}catch(e){}})()`,
+          }}
+        />
+
         <BlogBackground />
         <SiteHeader />
         <div className="flex-1">{children}</div>

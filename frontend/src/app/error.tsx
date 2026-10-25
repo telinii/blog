@@ -31,7 +31,7 @@ export default function Error({
 
       <button
         onClick={() => reset()}
-        className="mt-8 inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-strong"
+        className="mt-8 inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong"
       >
         Tentar de novo
       </button>
