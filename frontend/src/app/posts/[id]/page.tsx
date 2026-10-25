@@ -26,9 +26,12 @@ export async function generateMetadata({
 
 export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <Link href="/" className="text-sm text-blue-600 hover:underline">
-        ← Voltar
+    <main className="mx-auto w-full max-w-2xl px-6 py-10 sm:py-14">
+      <Link
+        href="/"
+        className="text-sm text-muted transition-colors hover:text-accent"
+      >
+        ← Todos os posts
       </Link>
 
       <Suspense fallback={<PostSkeleton />}>
@@ -46,23 +49,46 @@ async function PostContent({ params }: { params: Promise<{ id: string }> }) {
   if (!post) notFound();
 
   return (
-    <article className="mt-4">
-      <h1 className="text-3xl font-bold">{post.titulo}</h1>
-      <p className="text-sm text-gray-500">
-        {post.categoria} · {post.usuario.nome} · {formatDate(post.data)}
-      </p>
-      <p className="mt-4 whitespace-pre-line">{post.conteudo}</p>
+    <article className="mt-6">
+      <span className="inline-block rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
+        {post.categoria}
+      </span>
+
+      <h1 className="mt-4 font-serif text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+        {post.titulo}
+      </h1>
+
+      <div className="mt-6 flex items-center gap-3 border-b border-line pb-6">
+        <span
+          aria-hidden
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-ink font-serif text-sm font-semibold text-paper"
+        >
+          {post.usuario.nome.charAt(0).toUpperCase()}
+        </span>
+        <div className="text-sm leading-tight">
+          <p className="font-medium">{post.usuario.nome}</p>
+          <time dateTime={post.data} className="text-muted">
+            {formatDate(post.data)}
+          </time>
+        </div>
+      </div>
+
+      <div className="mt-8 whitespace-pre-line text-[1.0625rem] leading-relaxed">
+        {post.conteudo}
+      </div>
     </article>
   );
 }
 
 function PostSkeleton() {
   return (
-    <div className="mt-4">
-      <div className="h-8 w-2/3 rounded bg-gray-200" />
-      <div className="mt-2 h-4 w-1/3 rounded bg-gray-100" />
-      <div className="mt-4 h-24 rounded bg-gray-100" />
+    <div className="mt-6 animate-pulse">
+      <div className="h-5 w-24 rounded-full bg-line/70" />
+      <div className="mt-4 h-9 w-3/4 rounded bg-line/70" />
+      <div className="mt-6 h-10 w-48 rounded bg-line/50" />
+      <div className="mt-8 h-4 w-full rounded bg-line/50" />
+      <div className="mt-2 h-4 w-full rounded bg-line/50" />
+      <div className="mt-2 h-4 w-2/3 rounded bg-line/50" />
     </div>
   );
 }
-

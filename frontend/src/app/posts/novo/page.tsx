@@ -15,14 +15,24 @@ export default async function NewPostPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <Link href="/" className="text-sm text-blue-600 hover:underline">
+    <main className="mx-auto w-full max-w-2xl px-6 py-12 sm:py-16">
+      <Link
+        href="/"
+        className="text-sm text-muted transition-colors hover:text-accent"
+      >
         ← Voltar para a home
       </Link>
 
-      <h1 className="mt-4 text-3xl font-bold">Novo post</h1>
+      <div className="mt-6 rounded-2xl border border-line bg-surface p-7 shadow-[0_1px_2px_rgba(27,26,23,0.04)] sm:p-8">
+        <h1 className="font-serif text-3xl font-semibold tracking-tight">
+          Novo post
+        </h1>
+        <p className="mt-2 text-sm text-muted">
+          Escreva, revise e publique. Dá para editar depois.
+        </p>
 
-      <PostForm />
+        <PostForm />
+      </div>
     </main>
   );
 }

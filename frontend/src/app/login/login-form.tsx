@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { loginAction } from "./actions";
+import { buttonClass, errorClass, inputClass, labelClass } from "@/lib/ui";
 
 export function LoginForm() {
   // useActionState guarda o retorno da action (aqui, o erro) e o estado de envio
@@ -9,37 +10,34 @@ export function LoginForm() {
 
   return (
     <form action={formAction} className="mt-6 space-y-4">
-      {state.erro && (
-        <p className="rounded bg-red-50 p-3 text-sm text-red-700">{state.erro}</p>
-      )}
+      {state.erro && <p className={errorClass}>{state.erro}</p>}
 
       <label className="block">
-        <span className="text-sm font-medium">E-mail</span>
+        <span className={labelClass}>E-mail</span>
         <input
           name="email"
           type="email"
           required
-          className="mt-1 w-full rounded border p-2"
+          autoComplete="email"
+          placeholder="voce@exemplo.com"
+          className={inputClass}
         />
       </label>
 
       <label className="block">
-        <span className="text-sm font-medium">Senha</span>
+        <span className={labelClass}>Senha</span>
         <input
           name="senha"
           type="password"
           required
           minLength={10}
           maxLength={20}
-          className="mt-1 w-full rounded border p-2"
+          autoComplete="current-password"
+          className={inputClass}
         />
       </label>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-      >
+      <button type="submit" disabled={pending} className={`${buttonClass} w-full`}>
         {pending ? "Entrando..." : "Entrar"}
       </button>
     </form>

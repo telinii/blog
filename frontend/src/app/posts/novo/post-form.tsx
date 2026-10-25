@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { createPostAction } from "./actions";
+import { buttonClass, errorClass, inputClass, labelClass } from "@/lib/ui";
 
 export function PostForm() {
   const [state, formAction, pending] = useActionState(createPostAction, {
@@ -10,46 +11,43 @@ export function PostForm() {
 
   return (
     <form action={formAction} className="mt-6 space-y-4">
-      {state.erro && (
-        <p className="rounded bg-red-50 p-3 text-sm text-red-700">{state.erro}</p>
-      )}
+      {state.erro && <p className={errorClass}>{state.erro}</p>}
 
       <label className="block">
-        <span className="text-sm font-medium">Título</span>
+        <span className={labelClass}>Título</span>
         <input
           name="titulo"
           required
           maxLength={100}
-          className="mt-1 w-full rounded border p-2"
+          placeholder="Um título que dá vontade de clicar"
+          className={inputClass}
         />
       </label>
 
       <label className="block">
-        <span className="text-sm font-medium">Categoria</span>
+        <span className={labelClass}>Categoria</span>
         <input
           name="categoria"
           required
           maxLength={50}
-          className="mt-1 w-full rounded border p-2"
+          placeholder="Dev, Produto, Carreira..."
+          className={inputClass}
         />
       </label>
 
       <label className="block">
-        <span className="text-sm font-medium">Conteúdo</span>
+        <span className={labelClass}>Conteúdo</span>
         <textarea
           name="conteudo"
           required
-          rows={8}
+          rows={10}
           maxLength={5000}
-          className="mt-1 w-full rounded border p-2"
+          placeholder="Escreva aqui. Linhas em branco viram parágrafos."
+          className={`${inputClass} resize-y leading-relaxed`}
         />
       </label>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-      >
+      <button type="submit" disabled={pending} className={buttonClass}>
         {pending ? "Publicando..." : "Publicar"}
       </button>
     </form>

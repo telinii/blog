@@ -2,6 +2,12 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { logoutAction } from "@/app/logout/actions";
 
+const ghostLink =
+  "rounded-lg px-3 py-1.5 text-sm text-muted transition-colors hover:bg-line/50 hover:text-ink";
+
+const solidLink =
+  "rounded-lg bg-ink px-3.5 py-1.5 text-sm font-medium text-paper transition-colors hover:bg-accent";
+
 // Server Component que lê o cookie para decidir o que mostrar.
 // Por ler dado de requisição, ele precisa estar dentro de um <Suspense>.
 export async function AuthMenu() {
@@ -10,36 +16,30 @@ export async function AuthMenu() {
 
   if (!logged) {
     return (
-      <div className="flex items-center gap-3 text-sm">
-        <Link href="/login" className="text-blue-600 hover:underline">
+      <nav className="flex items-center gap-2">
+        <Link href="/login" className={ghostLink}>
           Entrar
         </Link>
-        <Link
-          href="/cadastro"
-          className="rounded bg-black px-3 py-1.5 text-white"
-        >
+        <Link href="/cadastro" className={solidLink}>
           Criar conta
         </Link>
-      </div>
+      </nav>
     );
   }
 
   return (
-    <div className="flex items-center gap-3 text-sm">
-      <Link
-        href="/posts/novo"
-        className="rounded bg-black px-3 py-1.5 text-white"
-      >
+    <nav className="flex items-center gap-2">
+      <Link href="/posts/novo" className={solidLink}>
         Novo post
       </Link>
 
       {/* <form action={serverAction}> funciona sem JS: o Next injeta
           campos ocultos e o POST vai direto para a action. */}
       <form action={logoutAction}>
-        <button type="submit" className="text-gray-600 hover:underline">
+        <button type="submit" className={ghostLink}>
           Sair
         </button>
       </form>
-    </div>
+    </nav>
   );
 }
