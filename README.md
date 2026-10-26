@@ -23,9 +23,11 @@ blog/
 - Cadastro de usuários com senha hasheada (bcrypt, 10 rounds)
 - Login com emissão de token JWT (HS256, expira em 1h)
 - Criação de posts protegida por autenticação Bearer
-- Listagem pública de posts com os dados do autor (nunca a senha)
+- Listagem pública de posts e página de detalhe, com os dados do autor (nunca a senha)
+- Rate limit por IP contra força bruta no login e spam de cadastro
 - Validação de entrada com Zod e mensagens de erro em português
-- Frontend renderizando a listagem de posts no servidor (Server Component)
+- Frontend com home, login, cadastro, publicação e detalhe do post
+  (Server Components e Server Actions, token em cookie `httpOnly`)
 
 ## Requisitos
 
@@ -55,10 +57,15 @@ E execute:
 
 ```sql
 CREATE DATABASE IF NOT EXISTS bloggers;
+CREATE DATABASE IF NOT EXISTS bloggers_test CHARACTER SET utf8mb4;
 CREATE USER IF NOT EXISTS 'blog_user'@'localhost' IDENTIFIED BY 'SUA_SENHA';
 GRANT ALL PRIVILEGES ON bloggers.* TO 'blog_user'@'localhost';
+GRANT ALL PRIVILEGES ON bloggers_test.* TO 'blog_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
+
+> `bloggers_test` é usado pela suíte de testes (`npm test`). Ela aplica as
+> migrations e roda contra esse banco, sem tocar no banco de desenvolvimento.
 
 > Para usar `npx prisma migrate dev` em desenvolvimento (ele cria um banco
 > temporário de shadow), conceda privilégio global:
@@ -76,7 +83,16 @@ Edite `backend/.env`:
 
 ```dotenv
 DATABASE_URL="mysql://blog_user:SUA_SENHA@localhost:3306/bloggers"
+DATABASE_URL_TEST="mysql://blog_user:SUA_SENHA@localhost:3306/bloggers_test"
 JWT_SECRET="uma-string-longa-e-aleatoria"
+```
+
+Variáveis opcionais de rate limit (os valores abaixo são os padrões):
+
+```dotenv
+LOGIN_RATE_LIMIT_MAX=5        # tentativas falhas de login por 15 min
+CADASTRO_RATE_LIMIT_MAX=10    # cadastros por hora
+# TRUST_PROXY=1               # só atrás de proxy confiável (Railway/Nginx)
 ```
 
 Gere um segredo forte com:
@@ -151,6 +167,7 @@ Base: `http://localhost:3000`
 | `POST` | `/login` | — | Autentica e retorna `{ token }` |
 | `POST` | `/posts` | Bearer token | Cria um post |
 | `GET` | `/posts` | — | Lista posts com o autor |
+| `GET` | `/posts/:id` | — | Retorna um post com o autor (`400` id inválido, `404` não encontrado) |
 
 ### Exemplos com curl
 
@@ -193,7 +210,7 @@ curl http://localhost:3000/posts
 
 ## Testes
 
-Os testes são de integração e precisam da API rodando:
+Os testes são de integração e se viram sozinhos — **não precisa** da API rodando:
 
 ```bash
 cd backend
@@ -201,8 +218,9 @@ npm test
 ```
 
 A suíte aplica as migrations no banco de `DATABASE_URL_TEST` (`bloggers_test`),
-sobe a própria API na porta 3100 e derruba no fim. Não precisa de `npm run dev`
-rodando e não encosta no banco de desenvolvimento.
+sobe a própria API na porta 3100 e derruba no fim. Não encosta no banco de
+desenvolvimento. O arquivo `rateLimit.test.mjs` sobe outra instância na 3101
+com limites baixos para validar os `429`.
 
 Variáveis opcionais:
 
@@ -254,6 +272,9 @@ HS256).
 | `Can't reach database server` | MySQL/MariaDB parado ou porta errada | Iniciar o serviço e conferir a porta `3306` |
 | Frontend sem posts | API parada ou `API_URL` errada | Subir o backend e conferir `frontend/.env.local` |
 | `Email já cadastrado` | E-mail duplicado | Usar outro e-mail |
+| `Cannot find module ...` após `git pull` | Dependência nova não instalada | Rodar `npm install` no app correspondente |
+| `429 Muitas tentativas` | Rate limit por IP | Esperar a janela (15 min login / 1 h cadastro) ou ajustar `LOGIN_RATE_LIMIT_MAX` / `CADASTRO_RATE_LIMIT_MAX` |
+| `Could not find a production build` | `npm start` sem build | Rodar `npm run build` antes, ou usar `npm run dev` |
 | Erro de migration por permissão | Falta de grant para shadow database | `GRANT ALL PRIVILEGES ON *.* TO 'blog_user'@'localhost';` |
 
 ## Documentação adicional

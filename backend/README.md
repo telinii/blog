@@ -96,6 +96,7 @@ Scripts:
 | `POST` | `/login` | — | Retorna `{ token }` |
 | `POST` | `/posts` | Bearer | Cria post (autor vem do token) |
 | `GET` | `/posts` | — | Lista posts com autor (sem `senha`) |
+| `GET` | `/posts/:id` | — | Retorna um post com autor (`400` id inválido, `404` inexistente) |
 
 ### Validação
 
@@ -139,6 +140,7 @@ aceito e qualquer cliente falsifica o IP para escapar do limite.
 2. `POST http://localhost:3000/login` com e-mail e senha → copie o `token`
 3. `POST http://localhost:3000/posts` → Auth → Bearer Token → `{"titulo":"...","conteudo":"...","categoria":"Dev"}`
 4. `GET http://localhost:3000/posts`
+5. `GET http://localhost:3000/posts/1`
 
 ### curl
 
