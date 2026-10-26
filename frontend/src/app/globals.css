@@ -32,6 +32,7 @@
   --bg-veil-2: #f0e0c8;
   --bg-word: #241f4a;
   --bg-word-glow: #8d7ce0;
+  --bg-word-fundo: rgba(36, 31, 74, 0.06);
   --bg-dot: rgba(58, 47, 99, 0.18);
   --bg-hair: rgba(58, 47, 99, 0.1);
 
@@ -74,6 +75,7 @@
   --bg-veil-2: #06041a;
   --bg-word: #ffffff;
   --bg-word-glow: #a99bff;
+  --bg-word-fundo: rgba(255, 255, 255, 0.09);
   --bg-dot: rgba(255, 255, 255, 0.16);
   --bg-hair: rgba(255, 255, 255, 0.09);
 
@@ -149,6 +151,16 @@
   fill: var(--bg-word);
 }
 
+/* Cópia apagada no fundo fixo: maior que a do hero e sem halo, porque ela é
+   textura, não tipografia. */
+.palavra-fundo {
+  font-family: var(--font-sans);
+  font-size: 560px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  fill: var(--bg-word-fundo);
+}
+
 /* Abaixo de 1024px o viewBox aparece com bem menos largura útil, então a
    palavra precisa encolher para caber inteira no quadro — em duas faixas,
    porque o corte de largura não é linear. */
@@ -157,12 +169,20 @@
   .palavra-brilho {
     font-size: 340px;
   }
+
+  .palavra-fundo {
+    font-size: 380px;
+  }
 }
 
 @media (max-width: 767px) {
   .palavra,
   .palavra-brilho {
     font-size: 240px;
+  }
+
+  .palavra-fundo {
+    font-size: 200px;
   }
 }
 

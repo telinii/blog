@@ -1,25 +1,27 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { CURVA } from "@/lib/curva";
+import { CURVA, CURVA_FUNDO } from "@/lib/curva";
 
-// Fundo do site: céu em gradiente, brilhos e uma grade de pontos. A palavra e a
-// curva que ela percorre ficam em BlogWord, só na home.
+// Fundo do site: céu em gradiente, brilhos, grade de pontos e a palavra apagada
+// atravessando tudo. A palavra nítida do hero fica em BlogWord, só na home.
 //
-// Camadas que deslizam com o scroll. O desenho (linhas e a curva) fica parado
-// de propósito: transformar um ancestral de <svg> faz o Chrome rasterizar a
-// área com um véu claro em volta do conteúdo. Chão parado, luz em movimento.
-const FATORES = [0.1, 0.05];
+// Camadas que deslizam com o scroll. As linhas geométricas ficam paradas de
+// propósito: transformar um ancestral de <svg> faz o Chrome rasterizar a área
+// com um véu claro em volta do conteúdo. Chão parado, luz em movimento. A
+// palavra do fundo é a exceção — sem filtro dentro do svg, o véu não aparece.
+const FATORES = [0.1, 0.18, 0.05];
 
 export function BlogBackground() {
   const brilho = useRef<HTMLDivElement>(null);
+  const palavra = useRef<HTMLDivElement>(null);
   const pontos = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Quem pediu menos animação no sistema fica com o fundo imóvel.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    const camadas = [brilho.current, pontos.current];
+    const camadas = [brilho.current, palavra.current, pontos.current];
 
     let alvo = window.scrollY;
     let atual = alvo;
@@ -117,6 +119,26 @@ export function BlogBackground() {
           <circle cx="1230" cy="215" r="380" opacity="0.55" />
         </g>
       </svg>
+
+      {/* A palavra apagada: cópia grande da do hero, presa ao fundo fixo. É a
+          camada mais perto do olho, então desliza mais que as outras. */}
+      <div ref={palavra} className="absolute inset-0">
+        <svg
+          viewBox="0 0 1600 900"
+          preserveAspectRatio="xMinYMax slice"
+          className="h-full w-full"
+        >
+          <defs>
+            <path id="curva-fundo" d={CURVA_FUNDO} fill="none" />
+          </defs>
+
+          <text className="palavra-fundo">
+            <textPath href="#curva-fundo" startOffset="2%" textAnchor="start">
+              blog
+            </textPath>
+          </text>
+        </svg>
+      </div>
 
       {/* Grão não se move: é textura, não profundidade */}
       <div className="grain absolute inset-0 opacity-[0.07] mix-blend-overlay" />
