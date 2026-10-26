@@ -27,7 +27,14 @@
   /* Fundo do site */
   --bg-glow-1: #f4d9b4;
   --bg-glow-2: #e9cdbd;
-  --bg-stroke: #8a6a4b;
+  --bg-trace: #b45309;
+  --bg-pad: #92400e;
+  --bg-core: #b45309;
+  --bg-core-halo: #e0a568;
+
+  /* Intensidade do halo do núcleo (a animação lê estas variáveis) */
+  --halo-min: 0.3;
+  --halo-max: 0.55;
 
   /* Artes de categoria */
   --art-ambar-de: #f7e2c6;
@@ -63,7 +70,13 @@
 
   --bg-glow-1: #3a2412;
   --bg-glow-2: #2a1b15;
-  --bg-stroke: #c8a882;
+  --bg-trace: #e79a5c;
+  --bg-pad: #f2ad74;
+  --bg-core: #e79a5c;
+  --bg-core-halo: #e79a5c;
+
+  --halo-min: 0.18;
+  --halo-max: 0.34;
 
   --art-ambar-de: #2a1d12;
   --art-ambar-ate: #40291a;
@@ -109,3 +122,14 @@
     background-size: 120px 120px;
   }
 }
+
+/* Núcleo do fundo respirando. O --pulso vai de 0 a 1 e é escrito pelo
+   requestAnimationFrame no componente; sem animação CSS de propósito (ver
+   comentário em blog-background.tsx). Sem JS ou com reduced motion, fica no
+   meio do caminho. */
+.nucleo-pulso {
+  opacity: calc(
+    var(--halo-min) + (var(--halo-max) - var(--halo-min)) * var(--pulso, 0.5)
+  );
+}
+
