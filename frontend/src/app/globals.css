@@ -36,6 +36,17 @@
   --bg-dot: rgba(58, 47, 99, 0.18);
   --bg-hair: rgba(58, 47, 99, 0.1);
 
+  /* Fita do leque: sai do lilás do fundo, passa por um rosa empoeirado e
+     termina no âmbar do acento. Fica no mesmo duotone do site — a fita não
+     introduz cor nova, só dá corpo ao que já existia. */
+  --ribbon-de: #8d7ce0;
+  --ribbon-meio: #c08290;
+  --ribbon-ate: #b45309;
+
+  /* Multiplicador de presença da fita. No claro ela já se lê sozinha; no escuro
+     precisa de mais para não virar arranhão. */
+  --ribbon-forca: 1;
+
   /* Artes de categoria */
   --art-ambar-de: #f7e2c6;
   --art-ambar-ate: #e8c69c;
@@ -78,6 +89,13 @@
   --bg-word-fundo: rgba(255, 255, 255, 0.09);
   --bg-dot: rgba(255, 255, 255, 0.16);
   --bg-hair: rgba(255, 255, 255, 0.09);
+
+  /* No escuro a fita acende: periwinkle no início, brasa no fim. */
+  --ribbon-de: #a99bff;
+  --ribbon-meio: #d98aa0;
+  --ribbon-ate: #f0a86a;
+
+  --ribbon-forca: 1.7;
 
   --art-ambar-de: #241a33;
   --art-ambar-ate: #3b2a4d;
