@@ -44,7 +44,7 @@ Acesse **http://localhost:3001**.
 | --- | --- |
 | `npm run dev` | Servidor de desenvolvimento em `http://localhost:3001` |
 | `npm run build` | Build de produção |
-| `npm start` | Serve o build em `http://localhost:3001` |
+| `npm start` | Serve o build em `http://localhost:3001` (exige `npm run build` antes) |
 | `npm run lint` | ESLint |
 
 ## Estrutura

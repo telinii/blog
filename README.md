@@ -241,7 +241,7 @@ HS256).
 | --- | --- |
 | `npm run dev` | Sobe o Next.js em `http://localhost:3001` |
 | `npm run build` | Build de produção |
-| `npm start` | Serve o build em `http://localhost:3001` |
+| `npm start` | Serve o build em `http://localhost:3001` (exige `npm run build` antes) |
 | `npm run lint` | Roda o ESLint |
 
 ## Solução de problemas
