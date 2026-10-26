@@ -155,7 +155,8 @@
    textura, não tipografia. */
 .palavra-fundo {
   font-family: var(--font-sans);
-  font-size: 560px;
+  /* Valor de partida: o componente recalcula pelo tamanho da tela. */
+  font-size: 600px;
   font-weight: 700;
   letter-spacing: 0.04em;
   fill: var(--bg-word-fundo);
@@ -171,7 +172,7 @@
   }
 
   .palavra-fundo {
-    font-size: 380px;
+    font-size: 400px;
   }
 }
 
@@ -182,7 +183,7 @@
   }
 
   .palavra-fundo {
-    font-size: 200px;
+    font-size: 180px;
   }
 }
 

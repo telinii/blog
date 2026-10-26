@@ -16,6 +16,7 @@ export function BlogBackground() {
   const brilho = useRef<HTMLDivElement>(null);
   const palavra = useRef<HTMLDivElement>(null);
   const pontos = useRef<HTMLDivElement>(null);
+  const texto = useRef<SVGTextElement>(null);
 
   useEffect(() => {
     // Quem pediu menos animação no sistema fica com o fundo imóvel.
@@ -86,6 +87,27 @@ export function BlogBackground() {
     };
   }, []);
 
+  // A palavra do fundo é dimensionada para caber inteira na largura visível do
+  // viewBox: como o svg usa "slice", a largura útil em unidades encolhe junto
+  // com o formato da tela. 2.22 é quanto "blog" avança por unidade de fonte
+  // (medido no Geist Bold, já com o espaçamento entre letras).
+  useEffect(() => {
+    const ajustar = () => {
+      const alvo = texto.current;
+      if (!alvo) return;
+
+      const escala = Math.max(window.innerWidth / 1600, window.innerHeight / 900);
+      const visivel = window.innerWidth / escala;
+      const fonte = Math.min(720, (visivel * 0.94) / 2.22);
+
+      alvo.style.fontSize = `${fonte.toFixed(1)}px`;
+    };
+
+    ajustar();
+    window.addEventListener("resize", ajustar);
+    return () => window.removeEventListener("resize", ajustar);
+  }, []);
+
   return (
     <div
       aria-hidden
@@ -132,7 +154,7 @@ export function BlogBackground() {
             <path id="curva-fundo" d={CURVA_FUNDO} fill="none" />
           </defs>
 
-          <text className="palavra-fundo">
+          <text ref={texto} className="palavra-fundo">
             <textPath href="#curva-fundo" startOffset="2%" textAnchor="start">
               blog
             </textPath>

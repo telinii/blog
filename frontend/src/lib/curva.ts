@@ -7,6 +7,8 @@
 // e o pé das letras é cortado pela borda de baixo.
 export const CURVA = "M -80 604 C 640 564 1080 334 1560 274";
 
-// A mesma ideia no espaço do fundo (viewBox 1600x900), mais baixa e mais
-// larga: é a cópia apagada que fica atrás de tudo e desce/sobe com o scroll.
-export const CURVA_FUNDO = "M -240 1120 C 620 1060 1200 620 1800 540";
+// A mesma ideia no espaço do fundo (viewBox 1600x900), deslocada para baixo:
+// é a cópia apagada que fica atrás de tudo e desce/sobe com o scroll. O rabicho
+// no fim só existe para a palavra nunca bater no fim do caminho e ser fatiada.
+export const CURVA_FUNDO =
+  "M 0 860 C 560 820 1120 520 1660 450 C 1800 435 1950 425 2100 420";
