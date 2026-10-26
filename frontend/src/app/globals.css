@@ -24,17 +24,17 @@
 :root {
   color-scheme: light;
 
-  /* Fundo do site */
-  --bg-glow-1: #f4d9b4;
-  --bg-glow-2: #e9cdbd;
-  --bg-trace: #b45309;
-  --bg-pad: #92400e;
-  --bg-core: #b45309;
-  --bg-core-halo: #e0a568;
-
-  /* Intensidade do halo do núcleo (a animação lê estas variáveis) */
-  --halo-min: 0.3;
-  --halo-max: 0.55;
+  /* Fundo do site: areia embaixo, lilás em cima — o espelho claro do
+     navy/violeta do tema escuro. */
+  --bg-sky-bottom: #f7f2e7;
+  --bg-sky-top: #e8e3f4;
+  --bg-veil-1: #ffffff;
+  --bg-veil-2: #f0e0c8;
+  --bg-word: #241f4a;
+  --bg-word-glow: #7b6bc4;
+  --bg-dot: rgba(58, 47, 99, 0.18);
+  --bg-hair: rgba(58, 47, 99, 0.1);
+  --palavra-opacidade: 0.09;
 
   /* Artes de categoria */
   --art-ambar-de: #f7e2c6;
@@ -59,39 +59,40 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --color-paper: #131210;
-  --color-surface: #1c1a16;
-  --color-ink: #f4efe6;
-  --color-muted: #a8a198;
-  --color-line: #2e2923;
-  --color-accent: #e79a5c;
-  --color-accent-strong: #f2ad74;
-  --color-on-accent: #1b1a17;
+  --color-paper: #100d2b;
+  --color-surface: #171338;
+  --color-ink: #f3f0ff;
+  --color-muted: #a9a3c4;
+  --color-line: #2a2552;
+  --color-accent: #f0a86a;
+  --color-accent-strong: #f7bd85;
+  --color-on-accent: #14102b;
 
-  --bg-glow-1: #3a2412;
-  --bg-glow-2: #2a1b15;
-  --bg-trace: #e79a5c;
-  --bg-pad: #f2ad74;
-  --bg-core: #e79a5c;
-  --bg-core-halo: #e79a5c;
+  /* Fundo do site: navy embaixo, violeta em cima */
+  --bg-sky-bottom: #0f0c29;
+  --bg-sky-top: #302b63;
+  --bg-veil-1: #6a5cc4;
+  --bg-veil-2: #06041a;
+  --bg-word: #ffffff;
+  --bg-word-glow: #8f7bff;
+  --bg-dot: rgba(255, 255, 255, 0.16);
+  --bg-hair: rgba(255, 255, 255, 0.09);
+  --palavra-opacidade: 0.12;
 
-  --halo-min: 0.18;
-  --halo-max: 0.34;
-
-  --art-ambar-de: #2a1d12;
-  --art-ambar-ate: #40291a;
+  --art-ambar-de: #241a33;
+  --art-ambar-ate: #3b2a4d;
   --art-ambar-forma: #e79a5c;
 
-  --art-areia-de: #241f19;
-  --art-areia-ate: #3a3126;
+  --art-areia-de: #1e1b30;
+  --art-areia-ate: #322d4a;
   --art-areia-forma: #cbb08a;
 
-  --art-argila-de: #2b1a14;
-  --art-argila-ate: #43251b;
+  --art-argila-de: #251a2e;
+  --art-argila-ate: #3c2846;
   --art-argila-forma: #e08a63;
 
-  --art-musgo-de: #1f2418;
-  --art-musgo-ate: #313a25;
+  --art-musgo-de: #191d2f;
+  --art-musgo-ate: #293244;
   --art-musgo-forma: #a8b985;
 }
 
@@ -121,15 +122,49 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
     background-size: 120px 120px;
   }
+
+  /* Grade de pontos do fundo. A máscara apaga as bordas: o miolo fica denso e
+     o canto some, então o olho não encontra a linha de fim da tela. */
+  .grade {
+    background-image: radial-gradient(var(--bg-dot) 1px, transparent 1.2px);
+    background-size: 26px 26px;
+    mask-image: radial-gradient(
+      120% 110% at 50% 42%,
+      #000 18%,
+      rgba(0, 0, 0, 0.55) 62%,
+      transparent 100%
+    );
+  }
 }
 
-/* Núcleo do fundo respirando. O --pulso vai de 0 a 1 e é escrito pelo
-   requestAnimationFrame no componente; sem animação CSS de propósito (ver
-   comentário em blog-background.tsx). Sem JS ou com reduced motion, fica no
-   meio do caminho. */
-.nucleo-pulso {
-  opacity: calc(
-    var(--halo-min) + (var(--halo-max) - var(--halo-min)) * var(--pulso, 0.5)
-  );
+/* A palavra do fundo. As letras são posicionadas pelo <textPath>, então o
+   tamanho aqui é em unidades do viewBox (1600x900), não em pixels de tela. */
+.palavra-grupo {
+  opacity: var(--palavra-opacidade, 0.16);
+}
+
+.palavra,
+.palavra-brilho {
+  font-family: var(--font-sans);
+  font-size: 190px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.palavra {
+  fill: var(--bg-word);
+}
+
+/* Cópia desfocada atrás: é o halo suave em volta das letras. */
+.palavra-brilho {
+  fill: var(--bg-word-glow);
+  filter: blur(26px);
+  opacity: 0.9;
+}
+
+/* A palavra some no pé da tela: ela é marca d'água do topo, não do texto que
+   vem embaixo. */
+.palavra-mascara {
+  mask-image: linear-gradient(to bottom, #000 50%, transparent 82%);
 }
 

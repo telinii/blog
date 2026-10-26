@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { BlogWord } from "@/components/blog-word";
 import { CategoryArt } from "@/components/category-art";
 import { formatDate } from "@/lib/format";
 import { getPosts } from "@/lib/api";
@@ -10,6 +11,10 @@ import { getPosts } from "@/lib/api";
 export default function Home() {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-12 sm:py-16">
+      {/* A palavra "blog" sobre a curva: só a home tem. Fica atrás de tudo
+          (fixed -z-10), então não ocupa espaço no fluxo. */}
+      <BlogWord />
+
       <section className="grid items-center gap-10 border-b border-line pb-12 md:grid-cols-[1.1fr_0.9fr]">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.22em] text-accent">
