@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CategoryArt } from "@/components/category-art";
+import { PostCover } from "@/components/post-cover";
 import { formatDate } from "@/lib/format";
 import { getPost } from "@/lib/api";
 
@@ -52,8 +52,9 @@ async function PostContent({ params }: { params: Promise<{ id: string }> }) {
   return (
     <article className="mt-6">
       <div className="overflow-hidden rounded-2xl border border-line shadow-[0_24px_50px_-34px_rgba(0,0,0,0.45)]">
-        <CategoryArt
+        <PostCover
           categoria={post.categoria}
+          capa={post.capa}
           className="aspect-[16/9] sm:aspect-[21/9]"
         />
       </div>

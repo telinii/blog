@@ -5,12 +5,12 @@
 const API_URL = process.env.API_URL ?? "http://localhost:3000";
 
 export type Author = { id: number; nome: string; bio: string };
-
 export type Post = {
   id: number;
   titulo: string;
   conteudo: string;
   categoria: string;
+  capa: string | null;
   publicado: boolean;
   data: string;
   usuario: Author;
@@ -20,7 +20,15 @@ export type NewPost = {
   titulo: string;
   conteudo: string;
   categoria: string;
+  capa?: File;
 };
+
+// URL pública de um arquivo do backend (capa). Caminhos relativos
+// (/uploads/...) viram absolutos; URLs externas passam intactas.
+export function assetUrl(caminho: string): string {
+  if (/^https?:\/\//i.test(caminho)) return caminho;
+  return `${API_URL}${caminho}`;
+}
 
 export type NewUser = {
   nome: string;
@@ -117,21 +125,25 @@ export type CreatePostResult =
   | { ok: true }
   | { ok: false; status: number; erro: string };
 
+// Multipart: manda os campos de texto e, se houver, o arquivo "capa".
+// Não definimos Content-Type — o fetch gera o boundary sozinho.
 export async function createPost(
   token: string,
-  input: NewPost,
+  body: FormData,
 ): Promise<CreatePostResult> {
-  const { status, data } = await apiFetch<{ erro?: string }>("/posts", {
+  const res = await fetch(`${API_URL}/posts`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify(input),
+    body,
   });
 
-  if (status === 201) return { ok: true };
+  const data = (await res.json().catch(() => null)) as { erro?: string } | null;
+
+  if (res.status === 201) return { ok: true };
 
   return {
     ok: false,
-    status,
+    status: res.status,
     erro: data?.erro ?? "Não foi possível criar o post.",
   };
 }

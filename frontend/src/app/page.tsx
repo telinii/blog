@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { BlogWord } from "@/components/blog-word";
-import { CategoryArt } from "@/components/category-art";
+import { PostCover } from "@/components/post-cover";
 import { formatDate } from "@/lib/format";
 import { getPosts } from "@/lib/api";
 
@@ -92,8 +92,9 @@ async function PostList() {
               </div>
             </div>
 
-            <CategoryArt
+            <PostCover
               categoria={post.categoria}
+              capa={post.capa}
               className="aspect-square w-20 shrink-0 overflow-hidden rounded-xl border border-line transition-transform duration-300 group-hover:-translate-y-0.5 sm:aspect-[4/3] sm:w-32"
             />
           </article>

@@ -1,13 +1,16 @@
 import { createPost, getPost, listPosts } from "../controllers/postController";
 import { Router } from "express";
 import { auth } from "../middlewares/auth";
+import { uploadCapa } from "../middlewares/uploadCapa";
 
 
 // Creates an Express router: a way to group related routes
 const router = Router();
 
 // POST /posts -> creates a new post (createPost).
-router.post("/posts", auth, createPost);
+// uploadCapa lê multipart/form-data; em JSON ele não faz nada e o
+// express.json() já deixou o body pronto.
+router.post("/posts", auth, uploadCapa, createPost);
 
 // GET /posts -> lists all posts (listPosts).
 // Same URL as above, but a different HTTP method.

@@ -23,6 +23,7 @@ blog/
 - Cadastro de usuários com senha hasheada (bcrypt, 10 rounds)
 - Login com emissão de token JWT (HS256, expira em 1h)
 - Criação de posts protegida por autenticação Bearer
+- Capa opcional por post: upload de imagem (JPG, PNG, WEBP, GIF ou AVIF, até 5 MB), com fallback para a arte da categoria
 - Listagem pública de posts e página de detalhe, com os dados do autor (nunca a senha)
 - Rate limit por IP contra força bruta no login e spam de cadastro
 - Validação de entrada com Zod e mensagens de erro em português
@@ -156,6 +157,16 @@ API_URL="http://localhost:3000"
 > `API_URL` é lida apenas no servidor (Server Component), então não é exposta
 > ao browser e não sofre CORS.
 
+### Imagens de capa
+
+As imagens enviadas ficam em `backend/uploads/` (ignorada pelo Git) e são
+servidas pela API em `/uploads/<uuid>.<ext>`. O campo `capa` guarda esse
+caminho, não o binário.
+
+Em produção com disco efêmero (Railway, containers), essa pasta some a cada
+deploy. Nesse caso use um volume persistente ou um storage externo (S3/R2) e
+guarde a URL completa no campo `capa`.
+
 ## Endpoints da API
 
 Base: `http://localhost:3000`
@@ -165,7 +176,7 @@ Base: `http://localhost:3000`
 | `GET` | `/` | — | Health check |
 | `POST` | `/users` | — | Cria um usuário |
 | `POST` | `/login` | — | Autentica e retorna `{ token }` |
-| `POST` | `/posts` | Bearer token | Cria um post |
+| `POST` | `/posts` | Bearer token | Cria um post (JSON ou `multipart/form-data` com `capa`) |
 | `GET` | `/posts` | — | Lista posts com o autor |
 | `GET` | `/posts/:id` | — | Retorna um post com o autor (`400` id inválido, `404` não encontrado) |
 
@@ -200,6 +211,17 @@ curl -X POST http://localhost:3000/posts \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"titulo":"Meu primeiro post","conteudo":"Conteúdo do post","categoria":"Dev"}'
+```
+
+Com capa (multipart; a imagem é opcional):
+
+```bash
+curl -X POST http://localhost:3000/posts \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "titulo=Meu primeiro post" \
+  -F "conteudo=Conteúdo do post" \
+  -F "categoria=Dev" \
+  -F "capa=@/caminho/para/foto.jpg"
 ```
 
 Listar posts:
@@ -275,6 +297,7 @@ HS256).
 | `Cannot find module ...` após `git pull` | Dependência nova não instalada | Rodar `npm install` no app correspondente |
 | `429 Muitas tentativas` | Rate limit por IP | Esperar a janela (15 min login / 1 h cadastro) ou ajustar `LOGIN_RATE_LIMIT_MAX` / `CADASTRO_RATE_LIMIT_MAX` |
 | `Could not find a production build` | `npm start` sem build | Rodar `npm run build` antes, ou usar `npm run dev` |
+| Capa não aparece | Arquivo não enviado, formato inválido ou backend reiniciado sem a pasta | Conferir se o post tem `capa`, testar a URL `/uploads/...` e revisar `backend/uploads/` |
 | Erro de migration por permissão | Falta de grant para shadow database | `GRANT ALL PRIVILEGES ON *.* TO 'blog_user'@'localhost';` |
 
 ## Documentação adicional

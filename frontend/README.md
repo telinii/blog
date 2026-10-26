@@ -55,7 +55,7 @@ Acesse **http://localhost:3001**.
 | `/posts/[id]` | Detalhe do post; `404` amigável se não existir |
 | `/login` | Formulário de login (Server Action grava o token em cookie `httpOnly`) |
 | `/cadastro` | Formulário de cadastro |
-| `/posts/novo` | Publicar post (exige login; sem cookie redireciona para `/login`) |
+| `/posts/novo` | Publicar post com capa opcional (exige login; sem cookie redireciona para `/login`) |
 | `/logout` | Server Action que apaga o cookie e volta para a home |
 
 ## Estrutura
@@ -89,6 +89,10 @@ frontend/src/
 - **Escritas** (login, cadastro, novo post): Server Actions validam no servidor,
   chamam a API e tratam os erros. O login grava o JWT em cookie `httpOnly`
   (`sameSite=lax`, validade de 1h), inacessível ao JavaScript da página.
+- **Capa do post**: o formulário mostra uma prévia local e envia a imagem junto
+  com os campos via `multipart/form-data`. O limite é 5 MB (Server Action
+  configurada para 6 MB por causa do overhead do multipart). Sem capa, o post
+  usa a arte gerada da categoria.
 - **Token expirado/inválido**: ao publicar, um `401` da API apaga o cookie e
   redireciona para `/login`.
 - **Tema** claro/escuro é aplicado antes da hidratação e salvo em
@@ -104,3 +108,4 @@ frontend/src/
 | Mudou `API_URL` e não refletiu | Reinicie o `npm run dev` |
 | `Could not find a production build` | Rode `npm run build` antes de `npm start` |
 | `Cannot find module ...` após `git pull` | Rode `npm install` |
+| Prévia da capa aparece, mas o post sai sem foto | Arquivo acima de 5 MB ou formato não suportado | Usar JPG/PNG/WEBP/GIF/AVIF até 5 MB |

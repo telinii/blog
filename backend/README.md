@@ -11,6 +11,7 @@ Prisma 7 e MySQL/MariaDB.
 - Prisma ORM 7 (driver adapter `@prisma/adapter-mariadb`)
 - MySQL 8.x ou MariaDB 10.x/11.x
 - Zod (validação, mensagens em pt-BR)
+- Multer (upload das capas)
 - bcrypt (hash de senha, 10 rounds)
 - jsonwebtoken (JWT Bearer, HS256, 1h)
 
@@ -25,6 +26,7 @@ backend/
 │   ├── index.ts               App Express: middlewares, rotas, 404 e erros
 │   ├── env.ts                 Carrega o .env (dotenv silencioso)
 │   ├── prisma.ts              Singleton do PrismaClient + adapter
+│   ├── uploads.ts             Grava/remove as capas em uploads/
 │   ├── controllers/           createUser, login, createPost, listPosts
 │   ├── middlewares/auth.ts    Valida Authorization: Bearer <token>
 │   ├── middlewares/rateLimit.ts  Limite de tentativas de login e cadastro
@@ -78,6 +80,10 @@ npm run dev
 
 API em **http://localhost:3000**.
 
+As capas ficam em `uploads/` por padrão. Para usar outra pasta, defina
+`UPLOADS_DIR=/caminho/absoluto` no ambiente (a suíte de testes já usa uma pasta
+temporária).
+
 Scripts:
 
 | Comando | Descrição |
@@ -94,7 +100,7 @@ Scripts:
 | `GET` | `/` | — | Health check |
 | `POST` | `/users` | — | Cria usuário (retorna sem `senha`) |
 | `POST` | `/login` | — | Retorna `{ token }` |
-| `POST` | `/posts` | Bearer | Cria post (autor vem do token) |
+| `POST` | `/posts` | Bearer | Cria post (JSON ou multipart com `capa`; autor vem do token) |
 | `GET` | `/posts` | — | Lista posts com autor (sem `senha`) |
 | `GET` | `/posts/:id` | — | Retorna um post com autor (`400` id inválido, `404` inexistente) |
 
@@ -105,6 +111,9 @@ Scripts:
 - `POST /login`: `email` e `senha` nos mesmos limites.
 - `POST /posts`: `titulo` 1–100, `conteudo` 1–5000, `categoria` 1–50.
   `publicado` e `data` são definidos pelo servidor.
+- `capa` (opcional): arquivo `capa` em `multipart/form-data`, JPG/PNG/WEBP/GIF/AVIF,
+  até 5 MB. SVG é recusado de propósito (risco de XSS). O arquivo é gravado em
+  `uploads/` com nome UUID e servido em `/uploads/...`.
 
 ### Rate limit
 
@@ -123,7 +132,7 @@ aceito e qualquer cliente falsifica o IP para escapar do limite.
 
 ### Erros
 
-- `400` — validação ou JSON inválido
+- `400` — validação, JSON inválido ou imagem inválida (formato/tamanho)
 - `401` — token ausente, inválido ou credenciais erradas
 - `404` — rota inexistente (JSON)
 - `409` — e-mail já cadastrado
@@ -181,6 +190,10 @@ Os testes de rate limit sobem outra instância, na 3101, com limites baixos
 (`LOGIN_RATE_LIMIT_MAX=2`, `CADASTRO_RATE_LIMIT_MAX=2`), e conferem o `429`.
 A suíte principal roda com `NODE_ENV=test`, onde o limiter fica desligado.
 
+Os testes de upload usam uma pasta temporária (`UPLOADS_DIR`), conferem que a
+capa é gravada e servida em `/uploads/...` e que um arquivo que não é imagem
+recebe `400`.
+
 Variáveis opcionais: `BASE_URL` (usa um servidor já no ar e pula o spawn e as
 migrations) e `JWT_SECRET` (lida do `.env`).
 
@@ -191,4 +204,5 @@ migrations) e `JWT_SECRET` (lida do `.env`).
 - JWT HS256 com expiração de 1h; algoritmo fixado no `verify`.
 - Autor do post vem do token, nunca do body (campo `usuarioId` é rejeitado).
 - Rate limit por IP no login (5/15min) e no cadastro (10/hora).
+- Upload valida MIME e tamanho, gera nome aleatório e recusa SVG.
 - Erros inesperados retornam JSON genérico, sem stack trace.

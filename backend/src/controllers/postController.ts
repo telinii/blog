@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../prisma";
 import { postSchema } from "../schemas/post.schema";
+import { removerCapa, salvarCapa } from "../uploads";
 
 export async function createPost(req: Request, res: Response) {
   // Runs the validation BEFORE touching the database.
@@ -14,22 +15,37 @@ export async function createPost(req: Request, res: Response) {
   }
 
   // Uses the validated data (not req.body): unknown keys were rejected by .strict()
-  const { titulo, conteudo, categoria } = result.data;
+  const { titulo, conteudo, categoria, capa } = result.data;
 
   const usuarioId = req.user!.id; // comes from the token, not the body
 
+  // Só grava a imagem no disco depois que os campos passaram na validação.
+  let caminhoCapa: string | null = capa ?? null;
+  let capaGravada = false;
+
   try {
+    if (req.file) {
+      caminhoCapa = await salvarCapa(req.file);
+      capaGravada = true;
+    }
+
     const post = await prisma.post.create({
       data: {
         categoria: categoria,
         titulo: titulo,
         conteudo: conteudo,
+        capa: caminhoCapa,
         usuario: { connect: { id: usuarioId } }
       },
     });
 
     res.status(201).json(post);
   } catch (error: any) {
+    // Se o banco falhou depois do upload, o arquivo ficaria órfão no disco.
+    if (capaGravada && caminhoCapa) {
+      await removerCapa(caminhoCapa);
+    }
+
     if (error.code === "P2025") {
       res.status(400).json({ erro: "Usuário não encontrado" });
     } else {

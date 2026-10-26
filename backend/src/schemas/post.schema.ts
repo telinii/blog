@@ -7,6 +7,9 @@ export const postSchema = z
     titulo: z.string().min(1).max(100),
     conteudo: z.string().min(1).max(5000),
     categoria: z.string().min(1).max(50),
+    // Normalmente preenchido pelo upload; aceitar string permite clientes
+    // que já tenham a imagem hospedada em outro lugar.
+    capa: z.string().max(500).optional(),
   })
   .strict();
 

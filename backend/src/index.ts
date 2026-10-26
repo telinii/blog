@@ -3,6 +3,7 @@ import "./env";
 import express, { ErrorRequestHandler } from "express";
 import postRoutes from "./routes/postRoutes";
 import router from "./routes/userRoutes";
+import { UPLOADS_DIR } from "./uploads";
 
 // Fail fast: without the secret every POST /login would build an invalid token
 // and blow up later with a confusing error. Better refuse to start.
@@ -24,6 +25,14 @@ if (process.env.TRUST_PROXY === "1") {
 // express.json() parses JSON bodies sent by clients into req.body.
 // IMPORTANT: it must come BEFORE the routes, otherwise req.body arrives undefined.
 app.use(express.json());
+
+// Serve as capas enviadas. O nome é um UUID, então o conteúdo nunca muda:
+// pode cachear por muito tempo. Sem fallthrough para HTML: se não existir,
+// cai no 404 JSON do final.
+app.use(
+  "/uploads",
+  express.static(UPLOADS_DIR, { maxAge: "1y", immutable: true }),
+);
 
 // Mounts the post routes (/posts) and user routes (/users)
 app.use(postRoutes);

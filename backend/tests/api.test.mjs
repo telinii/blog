@@ -1,6 +1,8 @@
 import test, { after, before } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
@@ -22,6 +24,8 @@ if (!EXTERNAL && !TEST_DB_URL) {
 }
 
 let server = null;
+// Testes de upload gravam numa pasta temporária, não no uploads real.
+const UPLOADS_TESTE = mkdtempSync(join(tmpdir(), "blog-uploads-"));
 
 async function waitForServer() {
   for (let i = 0; i < 100; i++) {
@@ -99,6 +103,7 @@ before(async () => {
         DATABASE_URL: TEST_DB_URL,
         PORT: String(PORT),
         NODE_ENV: "test",
+        UPLOADS_DIR: UPLOADS_TESTE,
       },
       stdio: ["ignore", "ignore", "inherit"],
     });
@@ -119,6 +124,7 @@ before(async () => {
 
 after(() => {
   if (server) server.kill();
+  rmSync(UPLOADS_TESTE, { recursive: true, force: true });
 });
 
 // ---------- infraestrutura ----------
@@ -310,6 +316,50 @@ test("GET /posts responde 200, traz autor e nunca senha", async () => {
   assert.ok(created, "o post criado deveria aparecer na listagem");
   assert.equal("senha" in created.usuario, false);
   assert.equal(JSON.stringify(body).includes("senha"), false);
+});
+
+// ---------- capa ----------
+
+const PNG_1X1 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+
+test("POST /posts com capa salva a imagem e devolve o caminho", async () => {
+  const form = new FormData();
+  form.set("titulo", "Post com capa");
+  form.set("conteudo", "Conteudo com imagem");
+  form.set("categoria", "Dev");
+  form.set("capa", new Blob([Buffer.from(PNG_1X1, "base64")], { type: "image/png" }), "capa.png");
+
+  const res = await fetch(`${BASE}/posts`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+
+  assert.equal(res.status, 201);
+  const body = await res.json();
+  assert.match(body.capa, /^\/uploads\/[0-9a-f-]+\.png$/);
+
+  const imagem = await fetch(`${BASE}${body.capa}`);
+  assert.equal(imagem.status, 200);
+  assert.equal(imagem.headers.get("content-type"), "image/png");
+});
+
+test("POST /posts recusa arquivo que não é imagem", async () => {
+  const form = new FormData();
+  form.set("titulo", "Post com txt");
+  form.set("conteudo", "Conteudo");
+  form.set("categoria", "Dev");
+  form.set("capa", new Blob(["nao sou imagem"], { type: "text/plain" }), "capa.txt");
+
+  const res = await fetch(`${BASE}/posts`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+
+  assert.equal(res.status, 400);
+  assert.equal(typeof (await res.json()).erro, "string");
 });
 
 test("GET /posts/:id devolve o post com autor e sem senha", async () => {
