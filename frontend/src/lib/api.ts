@@ -147,3 +147,27 @@ export async function createPost(
     erro: data?.erro ?? "Não foi possível criar o post.",
   };
 }
+
+// Edição: mesmos campos do create, agora com PATCH e o id na URL.
+// A API responde 403 quando o post não pertence ao usuário do token.
+export async function updatePost(
+  token: string,
+  id: string,
+  body: FormData,
+): Promise<CreatePostResult> {
+  const res = await fetch(`${API_URL}/posts/${id}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body,
+  });
+
+  const data = (await res.json().catch(() => null)) as { erro?: string } | null;
+
+  if (res.status === 200) return { ok: true };
+
+  return {
+    ok: false,
+    status: res.status,
+    erro: data?.erro ?? "Não foi possível salvar as alterações.",
+  };
+}

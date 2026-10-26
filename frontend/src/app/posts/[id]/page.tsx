@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { PostCover } from "@/components/post-cover";
 import { formatDate } from "@/lib/format";
 import { getPost } from "@/lib/api";
+import { getSessionUser } from "@/lib/session";
 
 export async function generateMetadata({
   params,
@@ -49,6 +50,9 @@ async function PostContent({ params }: { params: Promise<{ id: string }> }) {
   // Interrompe a renderização e mostra a página de not-found
   if (!post) notFound();
 
+  const user = await getSessionUser();
+  const podeEditar = user?.id === post.usuario.id;
+
   return (
     <article className="mt-6">
       <div className="overflow-hidden rounded-2xl border border-line shadow-[0_24px_50px_-34px_rgba(0,0,0,0.45)]">
@@ -59,9 +63,19 @@ async function PostContent({ params }: { params: Promise<{ id: string }> }) {
         />
       </div>
 
-      <span className="mt-7 inline-block rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
-        {post.categoria}
-      </span>
+      <div className="mt-7 flex items-center justify-between gap-3">
+        <span className="inline-block rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
+          {post.categoria}
+        </span>
+        {podeEditar && (
+          <Link
+            href={`/posts/${post.id}/editar`}
+            className="text-sm font-medium text-accent transition-opacity hover:opacity-70"
+          >
+            Editar post
+          </Link>
+        )}
+      </div>
 
       <h1 className="mt-4 font-serif text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
         {post.titulo}

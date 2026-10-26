@@ -24,6 +24,7 @@ blog/
 - Login com emissão de token JWT (HS256, expira em 1h)
 - Criação de posts protegida por autenticação Bearer
 - Capa opcional por post: upload de imagem (JPG, PNG, WEBP, GIF ou AVIF, até 5 MB), com fallback para a arte da categoria
+- Edição pelo próprio autor (texto, categoria e capa), bloqueada para os demais
 - Listagem pública de posts e página de detalhe, com os dados do autor (nunca a senha)
 - Rate limit por IP contra força bruta no login e spam de cadastro
 - Validação de entrada com Zod e mensagens de erro em português
@@ -177,6 +178,7 @@ Base: `http://localhost:3000`
 | `POST` | `/users` | — | Cria um usuário |
 | `POST` | `/login` | — | Autentica e retorna `{ token }` |
 | `POST` | `/posts` | Bearer token | Cria um post (JSON ou `multipart/form-data` com `capa`) |
+| `PATCH` | `/posts/:id` | Bearer token (autor) | Edita o post; `403` se não for o autor |
 | `GET` | `/posts` | — | Lista posts com o autor |
 | `GET` | `/posts/:id` | — | Retorna um post com o autor (`400` id inválido, `404` não encontrado) |
 
@@ -224,6 +226,23 @@ curl -X POST http://localhost:3000/posts \
   -F "capa=@/caminho/para/foto.jpg"
 ```
 
+Editar o próprio post (só o autor; `403` para os demais):
+
+```bash
+curl -X PATCH http://localhost:3000/posts/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "titulo=Título revisado" \
+  -F "conteudo=Texto novo" \
+  -F "categoria=Dev" \
+  -F "capa=@/caminho/para/nova-foto.jpg"
+
+# Remover a capa sem enviar outra foto:
+curl -X PATCH http://localhost:3000/posts/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"removerCapa":true}'
+```
+
 Listar posts:
 
 ```bash
@@ -249,7 +268,7 @@ Variáveis opcionais:
 - `BASE_URL` — usa um servidor já no ar e pula o spawn e as migrations
 - `JWT_SECRET` — lida do `backend/.env`
 
-A suíte cobre cadastro, login, autenticação, validação, criação e listagem de
+A suíte cobre cadastro, login, autenticação, validação, criação, edição (incluindo `403` para post de outra pessoa) e listagem de
 posts, rate limit (`429` após o limite) e casos de segurança (senha nunca
 retornada, mensagens de erro genéricas no login, algoritmo do token fixado em
 HS256).

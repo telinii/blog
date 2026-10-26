@@ -102,6 +102,7 @@ Scripts:
 | `POST` | `/login` | — | Retorna `{ token }` |
 | `POST` | `/posts` | Bearer | Cria post (JSON ou multipart com `capa`; autor vem do token) |
 | `GET` | `/posts` | — | Lista posts com autor (sem `senha`) |
+| `PATCH` | `/posts/:id` | Bearer | Edita post (só autor; `403` caso contrário) |
 | `GET` | `/posts/:id` | — | Retorna um post com autor (`400` id inválido, `404` inexistente) |
 
 ### Validação
@@ -114,6 +115,13 @@ Scripts:
 - `capa` (opcional): arquivo `capa` em `multipart/form-data`, JPG/PNG/WEBP/GIF/AVIF,
   até 5 MB. SVG é recusado de propósito (risco de XSS). O arquivo é gravado em
   `uploads/` com nome UUID e servido em `/uploads/...`.
+
+### Edição
+
+`PATCH /posts/:id` aceita os mesmos campos, todos opcionais. O usuário do token
+precisa ser o autor (`403` caso contrário; `404` se o post não existe). Enviar
+`capa` troca a imagem (a antiga é apagada); `{"removerCapa":true}` remove a capa
+sem enviar arquivo.
 
 ### Rate limit
 
@@ -134,6 +142,7 @@ aceito e qualquer cliente falsifica o IP para escapar do limite.
 
 - `400` — validação, JSON inválido ou imagem inválida (formato/tamanho)
 - `401` — token ausente, inválido ou credenciais erradas
+- `403` — tentativa de editar post de outra pessoa
 - `404` — rota inexistente (JSON)
 - `409` — e-mail já cadastrado
 - `413` — body acima de 100kb
@@ -192,7 +201,8 @@ A suíte principal roda com `NODE_ENV=test`, onde o limiter fica desligado.
 
 Os testes de upload usam uma pasta temporária (`UPLOADS_DIR`), conferem que a
 capa é gravada e servida em `/uploads/...` e que um arquivo que não é imagem
-recebe `400`.
+recebe `400`. A edição é testada nos dois lados: autor atualiza, outro usuário
+recebe `403`, além de `401`, `404`, body vazio e troca/remoção de capa.
 
 Variáveis opcionais: `BASE_URL` (usa um servidor já no ar e pula o spawn e as
 migrations) e `JWT_SECRET` (lida do `.env`).
@@ -203,6 +213,7 @@ migrations) e `JWT_SECRET` (lida do `.env`).
 - Login com resposta idêntica para e-mail inexistente e senha errada.
 - JWT HS256 com expiração de 1h; algoritmo fixado no `verify`.
 - Autor do post vem do token, nunca do body (campo `usuarioId` é rejeitado).
+- `PATCH /posts/:id` exige que o usuário do token seja o autor (`403`).
 - Rate limit por IP no login (5/15min) e no cadastro (10/hora).
 - Upload valida MIME e tamanho, gera nome aleatório e recusa SVG.
 - Erros inesperados retornam JSON genérico, sem stack trace.

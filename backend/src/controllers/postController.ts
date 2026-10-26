@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../prisma";
-import { postSchema } from "../schemas/post.schema";
+import { postSchema, updatePostSchema } from "../schemas/post.schema";
 import { removerCapa, salvarCapa } from "../uploads";
 
 export async function createPost(req: Request, res: Response) {
@@ -52,6 +52,85 @@ export async function createPost(req: Request, res: Response) {
       console.error("Erro ao criar post:", error);
       res.status(500).json({ erro: "Erro interno no servidor" });
     }
+  }
+}
+
+export async function updatePost(req: Request, res: Response) {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ erro: "ID inválido" });
+    return;
+  }
+
+  const result = updatePostSchema.safeParse(req.body);
+
+  if (!result.success) {
+    res.status(400).json({ erro: result.error.issues[0].message });
+    return;
+  }
+
+  const dados = result.data;
+  const remover = dados.removerCapa === true || dados.removerCapa === "true";
+
+  // A capa nova só vai para o disco depois da checagem de dono.
+  let capaNova: string | undefined;
+  let capaGravada = false;
+
+  try {
+    const existente = await prisma.post.findUnique({
+      where: { id },
+      select: { id: true, usuarioId: true, capa: true },
+    });
+
+    if (!existente) {
+      res.status(404).json({ erro: "Post não encontrado" });
+      return;
+    }
+
+    // 403, não 404: o post existe, mas não é seu.
+    if (existente.usuarioId !== req.user!.id) {
+      res.status(403).json({ erro: "Você só pode editar seus próprios posts" });
+      return;
+    }
+
+    if (req.file) {
+      capaNova = await salvarCapa(req.file);
+      capaGravada = true;
+    }
+
+    const data: {
+      titulo?: string;
+      conteudo?: string;
+      categoria?: string;
+      capa?: string | null;
+    } = {};
+
+    if (dados.titulo !== undefined) data.titulo = dados.titulo;
+    if (dados.conteudo !== undefined) data.conteudo = dados.conteudo;
+    if (dados.categoria !== undefined) data.categoria = dados.categoria;
+
+    // Prioridade: arquivo novo > remover > caminho enviado no JSON.
+    if (capaNova) data.capa = capaNova;
+    else if (remover) data.capa = null;
+    else if (dados.capa !== undefined) data.capa = dados.capa;
+
+    const post = await prisma.post.update({ where: { id }, data });
+
+    // A capa antiga não é mais referenciada: apaga do disco.
+    if (existente.capa && (capaNova || remover)) {
+      await removerCapa(existente.capa);
+    }
+
+    res.status(200).json(post);
+  } catch (error) {
+    // Se o banco falhou depois do upload, o arquivo novo ficaria órfão.
+    if (capaGravada && capaNova) {
+      await removerCapa(capaNova);
+    }
+
+    console.error("Erro ao editar post:", error);
+    res.status(500).json({ erro: "Erro interno no servidor" });
   }
 }
 

@@ -47,6 +47,7 @@ const fixtureEmail = `fixture.${stamp}@example.com`;
 const senha = "senha12345";
 
 let token = "";
+let outroToken = "";
 let fixtureId = 0;
 
 const post = (path, body) =>
@@ -59,6 +60,13 @@ const post = (path, body) =>
 const postAuth = (path, body, t) =>
   fetch(`${BASE}${path}`, {
     method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+    body: JSON.stringify(body),
+  });
+
+const patchAuth = (path, body, t) =>
+  fetch(`${BASE}${path}`, {
+    method: "PATCH",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
     body: JSON.stringify(body),
   });
@@ -120,6 +128,17 @@ before(async () => {
   const login = await post("/login", { email: fixtureEmail, senha });
   assert.equal(login.status, 200, "fixture: POST /login deveria autenticar");
   token = (await login.json()).token;
+
+  // Segundo usuário: serve para provar que ninguém edita post alheio.
+  const outroEmail = `outro.${stamp}@example.com`;
+  const outro = await post("/users", {
+    nome: "Outro", email: outroEmail, bio: "nao e dono", senha,
+  });
+  assert.equal(outro.status, 201, "fixture: segundo usuário deveria ser criado");
+
+  const loginOutro = await post("/login", { email: outroEmail, senha });
+  assert.equal(loginOutro.status, 200, "fixture: segundo login deveria autenticar");
+  outroToken = (await loginOutro.json()).token;
 });
 
 after(() => {
@@ -360,6 +379,106 @@ test("POST /posts recusa arquivo que não é imagem", async () => {
 
   assert.equal(res.status, 400);
   assert.equal(typeof (await res.json()).erro, "string");
+});
+
+// ---------- edição ----------
+
+test("PATCH /posts/:id do autor atualiza os campos", async () => {
+  const created = await postAuth(
+    "/posts",
+    { titulo: "Antes", conteudo: "Conteudo original", categoria: "Dev" },
+    token,
+  );
+  assert.equal(created.status, 201);
+  const post = await created.json();
+
+  const res = await patchAuth(
+    `/posts/${post.id}`,
+    { titulo: "Depois", categoria: "Produto" },
+    token,
+  );
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.titulo, "Depois");
+  assert.equal(body.categoria, "Produto");
+  assert.equal(body.conteudo, "Conteudo original");
+  assert.equal(body.usuarioId, fixtureId);
+});
+
+test("PATCH /posts/:id de outro usuário responde 403", async () => {
+  const created = await postAuth(
+    "/posts",
+    { titulo: "Dono", conteudo: "Nao edite", categoria: "Dev" },
+    token,
+  );
+  const post = await created.json();
+
+  const res = await patchAuth(`/posts/${post.id}`, { titulo: "Invasao" }, outroToken);
+  assert.equal(res.status, 403);
+  assert.equal(typeof (await res.json()).erro, "string");
+});
+
+test("PATCH /posts/:id sem token responde 401", async () => {
+  const res = await fetch(`${BASE}/posts/1`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titulo: "x" }),
+  });
+  assert.equal(res.status, 401);
+});
+
+test("PATCH /posts/:id inexistente responde 404", async () => {
+  const res = await patchAuth("/posts/999999", { titulo: "x" }, token);
+  assert.equal(res.status, 404);
+});
+
+test("PATCH /posts/:id sem campos responde 400", async () => {
+  const res = await patchAuth("/posts/1", {}, token);
+  assert.equal(res.status, 400);
+});
+
+test("PATCH /posts/:id troca e remove a capa", async () => {
+  const form = new FormData();
+  form.set("titulo", "Com capa original");
+  form.set("conteudo", "Conteudo");
+  form.set("categoria", "Dev");
+  form.set("capa", new Blob([Buffer.from(PNG_1X1, "base64")], { type: "image/png" }), "original.png");
+
+  const created = await fetch(`${BASE}/posts`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  assert.equal(created.status, 201);
+  const post = await created.json();
+  const capaOriginal = post.capa;
+
+  // Troca por outra imagem
+  const troca = new FormData();
+  troca.set("titulo", "Com capa nova");
+  troca.set("capa", new Blob([Buffer.from(PNG_1X1, "base64")], { type: "image/png" }), "nova.png");
+
+  const res = await fetch(`${BASE}/posts/${post.id}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body: troca,
+  });
+
+  assert.equal(res.status, 200);
+  const atualizado = await res.json();
+  assert.match(atualizado.capa, /^\/uploads\/[0-9a-f-]+\.png$/);
+  assert.notEqual(atualizado.capa, capaOriginal);
+
+  // A capa antiga saiu do disco
+  assert.equal((await fetch(`${BASE}${capaOriginal}`)).status, 404);
+  assert.equal((await fetch(`${BASE}${atualizado.capa}`)).status, 200);
+
+  // Remove a capa atual
+  const remocao = await patchAuth(`/posts/${post.id}`, { removerCapa: true }, token);
+  assert.equal(remocao.status, 200);
+  assert.equal((await remocao.json()).capa, null);
+  assert.equal((await fetch(`${BASE}${atualizado.capa}`)).status, 404);
 });
 
 test("GET /posts/:id devolve o post com autor e sem senha", async () => {

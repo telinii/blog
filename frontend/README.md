@@ -52,7 +52,8 @@ Acesse **http://localhost:3001**.
 | Rota | Descrição |
 | --- | --- |
 | `/` | Home com a lista de posts (Server Component) |
-| `/posts/[id]` | Detalhe do post; `404` amigável se não existir |
+| `/posts/[id]` | Detalhe do post; `404` amigável se não existir; autor vê "Editar post" |
+| `/posts/[id]/editar` | Edição restrita ao autor (texto, categoria, troca/remoção de capa) |
 | `/login` | Formulário de login (Server Action grava o token em cookie `httpOnly`) |
 | `/cadastro` | Formulário de cadastro |
 | `/posts/novo` | Publicar post com capa opcional (exige login; sem cookie redireciona para `/login`) |
@@ -95,6 +96,10 @@ frontend/src/
   usa a arte gerada da categoria.
 - **Token expirado/inválido**: ao publicar, um `401` da API apaga o cookie e
   redireciona para `/login`.
+- **Edição**: o detalhe mostra "Editar post" só quando o id do JWT é o do autor.
+  A página de edição repete a checagem no servidor e a API responde `403` se
+  alguém tentar pela rede. Trocar a capa apaga a antiga; também há opção de
+  removê-la.
 - **Tema** claro/escuro é aplicado antes da hidratação e salvo em
   `localStorage`.
 

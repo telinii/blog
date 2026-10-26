@@ -1,4 +1,4 @@
-import { createPost, getPost, listPosts } from "../controllers/postController";
+import { createPost, getPost, listPosts, updatePost } from "../controllers/postController";
 import { Router } from "express";
 import { auth } from "../middlewares/auth";
 import { uploadCapa } from "../middlewares/uploadCapa";
@@ -11,6 +11,10 @@ const router = Router();
 // uploadCapa lê multipart/form-data; em JSON ele não faz nada e o
 // express.json() já deixou o body pronto.
 router.post("/posts", auth, uploadCapa, createPost);
+
+// PATCH /posts/:id -> edita um post. Só o autor pode (checado no controller).
+// uploadCapa permite trocar a foto; "removerCapa=true" apaga a atual.
+router.patch("/posts/:id", auth, uploadCapa, updatePost);
 
 // GET /posts -> lists all posts (listPosts).
 // Same URL as above, but a different HTTP method.
