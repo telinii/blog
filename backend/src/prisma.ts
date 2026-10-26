@@ -8,17 +8,28 @@ import { PrismaClient } from "./generated/prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
 let adapter: PrismaMariaDb;
-if (process.env.DATABASE_URL) {
-  // Creates the adapter with the connection string from .env
-  // (e.g.: mysql://blog_user:senha@localhost:3306/bloggers)
-  adapter = new PrismaMariaDb(process.env.DATABASE_URL);
-}
-else {
+
+if (!process.env.DATABASE_URL) {
   // If .env has no DATABASE_URL, the app should not even start
-  throw new Error("DATABASE_URL não está definida no .env")
+  throw new Error("DATABASE_URL não está definida no .env");
 }
+
+// The connection string alone is not enough here: MySQL 8.4 authenticates with
+// caching_sha2_password, and over a non-TLS socket that requires the client to
+// fetch the server's public key. Without `allowPublicKeyRetrieval` the pool
+// never gets a connection (Prisma reports P2039 / pool timeout).
+const url = new URL(process.env.DATABASE_URL);
+
+adapter = new PrismaMariaDb({
+  host: url.hostname,
+  port: Number(url.port || 3306),
+  user: decodeURIComponent(url.username),
+  password: decodeURIComponent(url.password),
+  database: url.pathname.replace(/^\//, ""),
+  allowPublicKeyRetrieval: true,
+});
 
 // Exports the Prisma client configured with the adapter.
 // Every file that needs to talk to the database imports from here,
 // ensuring we use a SINGLE connection instance (singleton pattern).
-export const prisma = new PrismaClient({ adapter })
+export const prisma = new PrismaClient({ adapter });
