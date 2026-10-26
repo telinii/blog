@@ -1,7 +1,8 @@
-// Um único Bézier cúbico atravessa a tela de baixo à esquerda até em cima à
-// direita. A curva começa rasa (base de garrafa), sobe no meio e volta a deitar
-// no alto (gargalo) — a inflexão fica no centro.
+// Um único Bézier cúbico atravessa o hero de baixo à esquerda até em cima à
+// direita. A curva começa rasa e baixa (base de garrafa, quase encostada no pé
+// da tela), sobe no meio e volta a deitar no alto (gargalo) — a inflexão fica
+// na metade direita.
 //
-// Compartilhado entre o fio de cabelo do fundo e a palavra que anda sobre ele,
-// para os dois nunca saírem do lugar.
-export const CURVA = "M 230 760 C 700 700 1050 260 1370 215";
+// Começa fora do quadro de propósito: o "b" entra cortado pela borda esquerda,
+// e o pé das letras é cortado pela borda de baixo.
+export const CURVA = "M -80 604 C 640 564 1080 334 1560 274";

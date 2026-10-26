@@ -10,36 +10,31 @@ import { getPosts } from "@/lib/api";
 
 export default function Home() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-12 sm:py-16">
-      {/* A palavra "blog" sobre a curva: só a home tem. Fica atrás de tudo
-          (fixed -z-10), então não ocupa espaço no fluxo. */}
-      <BlogWord />
-
-      <section className="grid items-center gap-10 border-b border-line pb-12 md:grid-cols-[1.1fr_0.9fr]">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.22em] text-accent">
-            Diário de bordo
-          </p>
-          <h1 className="mt-3 max-w-lg font-serif text-4xl font-semibold leading-[1.08] tracking-tight sm:text-[2.9rem]">
-            Ideias sobre código, produto e o que aprendi no caminho.
-          </h1>
-          <p className="mt-4 max-w-md text-base leading-relaxed text-muted">
-            Textos curtos, escritos devagar. Sem newsletter, sem pop-up, sem
-            contador de visitas.
-          </p>
-        </div>
-
-        <div className="relative overflow-hidden rounded-3xl border border-line shadow-[0_24px_50px_-32px_rgba(0,0,0,0.45)]">
-          <CategoryArt
-            categoria="dev"
-            className="aspect-[4/3] md:aspect-[4/5]"
-          />
-        </div>
+    <main className="w-full">
+      {/* Hero de largura total: a palavra atravessa a seção e é cortada pelas
+          bordas dela. O conteúdo fica em cima, na coluna de sempre. */}
+      <section className="relative isolate h-[44vh] min-h-[300px] lg:h-[60vh] lg:min-h-[420px] overflow-hidden border-b border-line">
+        <BlogWord />
       </section>
 
-      <Suspense fallback={<PostListSkeleton />}>
-        <PostList />
-      </Suspense>
+      <div className="mx-auto w-full max-w-3xl px-6 pt-10">
+        <p className="text-xs font-medium uppercase tracking-[0.22em] text-accent">
+          Diário de bordo
+        </p>
+        <h1 className="mt-3 max-w-lg font-serif text-4xl font-semibold leading-[1.08] tracking-tight sm:text-[2.9rem]">
+          Ideias sobre código, produto e o que aprendi no caminho.
+        </h1>
+        <p className="mt-4 max-w-md text-base leading-relaxed text-muted">
+          Textos curtos, escritos devagar. Sem newsletter, sem pop-up, sem
+          contador de visitas.
+        </p>
+      </div>
+
+      <div className="mx-auto w-full max-w-3xl px-6 pb-10 pt-6">
+        <Suspense fallback={<PostListSkeleton />}>
+          <PostList />
+        </Suspense>
+      </div>
     </main>
   );
 }
@@ -49,7 +44,7 @@ async function PostList() {
 
   if (posts.length === 0) {
     return (
-      <div className="mt-12 rounded-2xl border border-dashed border-line bg-surface/60 px-6 py-12 text-center">
+      <div className="mt-2 rounded-2xl border border-dashed border-line bg-surface/60 px-6 py-12 text-center">
         <p className="font-serif text-xl">Nada publicado ainda.</p>
         <p className="mt-2 text-sm text-muted">
           Quando o primeiro post sair, ele aparece aqui.
@@ -59,7 +54,7 @@ async function PostList() {
   }
 
   return (
-    <ul className="mt-2">
+    <ul>
       {posts.map((post) => (
         <li key={post.id} className="border-b border-line last:border-b-0">
           <article className="group flex items-start gap-5 py-8">
@@ -110,7 +105,7 @@ async function PostList() {
 
 function PostListSkeleton() {
   return (
-    <ul className="mt-2 animate-pulse">
+    <ul className="animate-pulse">
       {[0, 1, 2].map((i) => (
         <li key={i} className="flex gap-5 border-b border-line py-8 last:border-b-0">
           <div className="min-w-0 flex-1">

@@ -31,10 +31,9 @@
   --bg-veil-1: #ffffff;
   --bg-veil-2: #f0e0c8;
   --bg-word: #241f4a;
-  --bg-word-glow: #7b6bc4;
+  --bg-word-glow: #8d7ce0;
   --bg-dot: rgba(58, 47, 99, 0.18);
   --bg-hair: rgba(58, 47, 99, 0.1);
-  --palavra-opacidade: 0.09;
 
   /* Artes de categoria */
   --art-ambar-de: #f7e2c6;
@@ -74,10 +73,9 @@
   --bg-veil-1: #6a5cc4;
   --bg-veil-2: #06041a;
   --bg-word: #ffffff;
-  --bg-word-glow: #8f7bff;
+  --bg-word-glow: #a99bff;
   --bg-dot: rgba(255, 255, 255, 0.16);
   --bg-hair: rgba(255, 255, 255, 0.09);
-  --palavra-opacidade: 0.12;
 
   --art-ambar-de: #241a33;
   --art-ambar-ate: #3b2a4d;
@@ -137,34 +135,41 @@
   }
 }
 
-/* A palavra do fundo. As letras são posicionadas pelo <textPath>, então o
-   tamanho aqui é em unidades do viewBox (1600x900), não em pixels de tela. */
-.palavra-grupo {
-  opacity: var(--palavra-opacidade, 0.16);
-}
-
+/* A palavra do hero. As letras são posicionadas pelo <textPath>, então o
+   tamanho aqui é em unidades do viewBox (1600x700), não em pixels de tela. */
 .palavra,
 .palavra-brilho {
   font-family: var(--font-sans);
-  font-size: 190px;
+  font-size: 480px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.04em;
 }
 
 .palavra {
   fill: var(--bg-word);
 }
 
+/* Abaixo de 1024px o viewBox aparece com bem menos largura útil, então a
+   palavra precisa encolher para caber inteira no quadro — em duas faixas,
+   porque o corte de largura não é linear. */
+@media (max-width: 1023px) {
+  .palavra,
+  .palavra-brilho {
+    font-size: 340px;
+  }
+}
+
+@media (max-width: 767px) {
+  .palavra,
+  .palavra-brilho {
+    font-size: 240px;
+  }
+}
+
 /* Cópia desfocada atrás: é o halo suave em volta das letras. */
 .palavra-brilho {
   fill: var(--bg-word-glow);
-  filter: blur(26px);
-  opacity: 0.9;
-}
-
-/* A palavra some no pé da tela: ela é marca d'água do topo, não do texto que
-   vem embaixo. */
-.palavra-mascara {
-  mask-image: linear-gradient(to bottom, #000 50%, transparent 82%);
+  filter: blur(24px);
+  opacity: 0.55;
 }
 
