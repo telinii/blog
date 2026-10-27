@@ -36,6 +36,12 @@ export async function createPost(req: Request, res: Response) {
   // Uses the validated data (not req.body): unknown keys were rejected by .strict()
   const { titulo, conteudo, categoria, capa } = result.data;
 
+  // Sem o campo, nasce publicado. "false" (ou false) salva como rascunho.
+  const publicado =
+    result.data.publicado === undefined
+      ? true
+      : result.data.publicado === true || result.data.publicado === "true";
+
   const usuarioId = req.user!.id; // comes from the token, not the body
 
   // Só grava a imagem no disco depois que os campos passaram na validação.
@@ -54,7 +60,7 @@ export async function createPost(req: Request, res: Response) {
         titulo: titulo,
         conteudo: conteudo,
         capa: caminhoCapa,
-        publicado: true,
+        publicado: publicado,
         usuario: { connect: { id: usuarioId } }
       },
     });
@@ -124,11 +130,17 @@ export async function updatePost(req: Request, res: Response) {
       conteudo?: string;
       categoria?: string;
       capa?: string | null;
+      publicado?: boolean;
     } = {};
 
     if (dados.titulo !== undefined) data.titulo = dados.titulo;
     if (dados.conteudo !== undefined) data.conteudo = dados.conteudo;
     if (dados.categoria !== undefined) data.categoria = dados.categoria;
+
+    // Publicar um rascunho (ou despublicar) passa por aqui.
+    if (dados.publicado !== undefined) {
+      data.publicado = dados.publicado === true || dados.publicado === "true";
+    }
 
     // Prioridade: arquivo novo > remover > caminho enviado no JSON.
     if (capaNova) data.capa = capaNova;

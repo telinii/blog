@@ -653,3 +653,55 @@ test("DELETE /posts/:id inexistente responde 404 e id inválido 400", async () =
   assert.equal((await deleteAuth("/posts/999999", token)).status, 404);
   assert.equal((await deleteAuth("/posts/abc", token)).status, 400);
 });
+
+test("POST /posts aceita publicado=false e o rascunho não aparece na listagem", async () => {
+  const res = await postAuth(
+    "/posts",
+    { titulo: "Rascunho inicial", conteudo: "Conteudo", categoria: "Dev", publicado: false },
+    token,
+  );
+  assert.equal(res.status, 201);
+  const post = await res.json();
+  assert.equal(post.publicado, false);
+
+  const lista = await (await fetch(`${BASE}/posts?limit=50`)).json();
+  assert.equal(lista.some((p) => p.id === post.id), false);
+  assert.equal((await fetch(`${BASE}/posts/${post.id}`)).status, 404);
+});
+
+test("POST /posts sem publicado nasce publicado", async () => {
+  const res = await postAuth(
+    "/posts",
+    { titulo: "Nasce publicado", conteudo: "Conteudo", categoria: "Dev" },
+    token,
+  );
+  assert.equal(res.status, 201);
+  assert.equal((await res.json()).publicado, true);
+});
+
+test("PATCH /posts/:id publica um rascunho", async () => {
+  const criado = await postAuth(
+    "/posts",
+    { titulo: "Vai publicar", conteudo: "Conteudo", categoria: "Dev", publicado: false },
+    token,
+  );
+  const { id } = await criado.json();
+
+  const res = await patchAuth(`/posts/${id}`, { publicado: true }, token);
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).publicado, true);
+  assert.equal((await fetch(`${BASE}/posts/${id}`)).status, 200);
+});
+
+test("PATCH /posts/:id aceita publicado vindo como string do formulário", async () => {
+  const criado = await postAuth(
+    "/posts",
+    { titulo: "String", conteudo: "Conteudo", categoria: "Dev", publicado: false },
+    token,
+  );
+  const { id } = await criado.json();
+
+  const res = await patchAuth(`/posts/${id}`, { publicado: "true" }, token);
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).publicado, true);
+});

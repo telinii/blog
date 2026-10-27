@@ -1,7 +1,10 @@
 import { z } from "./z";
 
 // Regras do POST /posts.
-// data e publicado não entram: o servidor define (ver @default no schema.prisma).
+// data não entra: o servidor define (ver @default no schema.prisma).
+// publicado é opcional: sem ele o post nasce publicado; "false" (ou false)
+// salva como rascunho. Aceita string porque multipart/form-data só carrega
+// texto — o formulário do front manda "true"/"false".
 export const postSchema = z
   .object({
     titulo: z.string().min(1).max(100),
@@ -10,6 +13,7 @@ export const postSchema = z
     // Normalmente preenchido pelo upload; aceitar string permite clientes
     // que já tenham a imagem hospedada em outro lugar.
     capa: z.string().max(500).optional(),
+    publicado: z.union([z.boolean(), z.enum(["true", "false"])]).optional(),
   })
   .strict();
 
@@ -23,6 +27,9 @@ export const updatePostSchema = z
     conteudo: z.string().min(1).max(5000).optional(),
     categoria: z.string().min(1).max(50).optional(),
     capa: z.string().max(500).optional(),
+    // "true" publica, "false" volta para rascunho. String porque o
+    // formulário de edição manda multipart.
+    publicado: z.union([z.boolean(), z.enum(["true", "false"])]).optional(),
     removerCapa: z
       .union([z.boolean(), z.enum(["true", "false"])])
       .optional(),
