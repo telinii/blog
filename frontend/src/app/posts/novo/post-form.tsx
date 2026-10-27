@@ -89,9 +89,29 @@ export function PostForm() {
         />
       </label>
 
-      <button type="submit" disabled={pending} className={buttonClass}>
-        {pending ? "Publicando..." : "Publicar"}
-      </button>
+      {/* Dois submits no mesmo form: o name/value do botão clicado chega na
+          action como formData.get("acao"). O rascunho fica em segundo plano,
+          com borda em vez de fundo, para não competir com o primário. */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          name="acao"
+          value="publicar"
+          disabled={pending}
+          className={buttonClass}
+        >
+          {pending ? "Salvando..." : "Publicar"}
+        </button>
+        <button
+          type="submit"
+          name="acao"
+          value="rascunho"
+          disabled={pending}
+          className="inline-flex items-center justify-center rounded-lg border border-line px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Salvar rascunho
+        </button>
+      </div>
     </form>
   );
 }

@@ -53,6 +53,10 @@ export async function createPostAction(
   body.set("titulo", titulo);
   body.set("conteudo", conteudo);
   body.set("categoria", categoria);
+  // O botão clicado decide se nasce publicado. Sem "acao" (ex.: Enter no
+  // formulário), o padrão é publicar — é o que o visitante espera.
+  const publicado = formData.get("acao") !== "rascunho";
+  body.set("publicado", String(publicado));
   if (capa) body.set("capa", capa);
 
   const result = await createPost(token, body);
@@ -67,7 +71,7 @@ export async function createPostAction(
     return { erro: result.erro };
   }
 
-  // A home busca os posts a cada acesso (fetch sem cache),
-  // então basta voltar para ela para o post novo aparecer.
-  redirect("/");
+  // Rascunho volta para a lista de rascunhos, onde dá para publicar depois;
+  // publicado volta para a home, onde o post já aparece no topo.
+  redirect(publicado ? "/" : "/rascunhos");
 }
