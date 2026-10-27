@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PostCover } from "@/components/post-cover";
+import { DeletePostButton } from "./delete-post-button";
 import { formatDate } from "@/lib/format";
 import { getPost } from "@/lib/api";
 import { getSessionUser } from "@/lib/session";
@@ -68,12 +69,15 @@ async function PostContent({ params }: { params: Promise<{ id: string }> }) {
           {post.categoria}
         </span>
         {podeEditar && (
-          <Link
-            href={`/posts/${post.id}/editar`}
-            className="text-sm font-medium text-accent transition-opacity hover:opacity-70"
-          >
-            Editar post
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/posts/${post.id}/editar`}
+              className="text-sm font-medium text-accent transition-opacity hover:opacity-70"
+            >
+              Editar post
+            </Link>
+            <DeletePostButton postId={post.id} />
+          </div>
         )}
       </div>
 

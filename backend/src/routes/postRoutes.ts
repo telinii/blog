@@ -1,4 +1,4 @@
-import { createPost, getPost, listPosts, updatePost } from "../controllers/postController";
+import { createPost, deletePost, getPost, listPosts, updatePost } from "../controllers/postController";
 import { Router } from "express";
 import { auth } from "../middlewares/auth";
 import { publicLimiter } from "../middlewares/rateLimit";
@@ -16,6 +16,10 @@ router.post("/posts", auth, uploadCapa, createPost);
 // PATCH /posts/:id -> edita um post. Só o autor pode (checado no controller).
 // uploadCapa permite trocar a foto; "removerCapa=true" apaga a atual.
 router.patch("/posts/:id", auth, uploadCapa, updatePost);
+
+// DELETE /posts/:id -> apaga o post. Só o autor pode (checado no controller).
+// A capa some do disco junto com a linha.
+router.delete("/posts/:id", auth, deletePost);
 
 // GET /posts -> lists all posts (listPosts).
 // Same URL as above, but a different HTTP method.

@@ -72,6 +72,12 @@ const patchAuth = (path, body, t) =>
     body: JSON.stringify(body),
   });
 
+const deleteAuth = (path, t) =>
+  fetch(`${BASE}${path}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${t}` },
+  });
+
 const sign = (payload, algorithm = "HS256") =>
   jwt.sign(payload, SECRET, { expiresIn: "1h", algorithm });
 
@@ -581,4 +587,69 @@ test("GET /posts/:id com id inexistente responde 404", async () => {
 test("GET /posts/:id com id inválido responde 400", async () => {
   const res = await fetch(`${BASE}/posts/abc`);
   assert.equal(res.status, 400);
+});
+
+test("DELETE /posts/:id do autor responde 204 e some da listagem", async () => {
+  const created = await postAuth(
+    "/posts",
+    { titulo: "Para excluir", conteudo: "Conteudo", categoria: "Dev" },
+    token,
+  );
+  assert.equal(created.status, 201);
+  const { id } = await created.json();
+
+  const res = await deleteAuth(`/posts/${id}`, token);
+  assert.equal(res.status, 204);
+
+  // Sem corpo: 204 não pode carregar JSON.
+  assert.equal((await res.text()).length, 0);
+
+  assert.equal((await fetch(`${BASE}/posts/${id}`)).status, 404);
+  assert.equal((await deleteAuth(`/posts/${id}`, token)).status, 404);
+});
+
+test("DELETE /posts/:id apaga a capa do disco", async () => {
+  const form = new FormData();
+  form.set("titulo", "Excluir com capa");
+  form.set("conteudo", "Conteudo");
+  form.set("categoria", "Dev");
+  form.set("capa", new Blob([PNG_1X1], { type: "image/png" }), "capa.png");
+
+  const created = await fetch(`${BASE}/posts`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  assert.equal(created.status, 201);
+  const { id, capa } = await created.json();
+  assert.equal((await fetch(`${BASE}${capa}`)).status, 200);
+
+  assert.equal((await deleteAuth(`/posts/${id}`, token)).status, 204);
+  assert.equal((await fetch(`${BASE}${capa}`)).status, 404);
+});
+
+test("DELETE /posts/:id de outro usuário responde 403 e não apaga", async () => {
+  const created = await postAuth(
+    "/posts",
+    { titulo: "Dono do post", conteudo: "Conteudo", categoria: "Dev" },
+    token,
+  );
+  const { id } = await created.json();
+
+  const res = await deleteAuth(`/posts/${id}`, outroToken);
+  assert.equal(res.status, 403);
+  assert.equal(typeof (await res.json()).erro, "string");
+
+  // Continua existindo depois da tentativa.
+  assert.equal((await fetch(`${BASE}/posts/${id}`)).status, 200);
+});
+
+test("DELETE /posts/:id sem token responde 401", async () => {
+  const res = await fetch(`${BASE}/posts/1`, { method: "DELETE" });
+  assert.equal(res.status, 401);
+});
+
+test("DELETE /posts/:id inexistente responde 404 e id inválido 400", async () => {
+  assert.equal((await deleteAuth("/posts/999999", token)).status, 404);
+  assert.equal((await deleteAuth("/posts/abc", token)).status, 400);
 });

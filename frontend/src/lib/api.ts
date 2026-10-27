@@ -171,3 +171,25 @@ export async function updatePost(
     erro: data?.erro ?? "Não foi possível salvar as alterações.",
   };
 }
+
+// Exclusão: a API responde 204 quando o post sai do ar. 403 significa que o
+// post é de outra pessoa; 404, que já não existe.
+export async function deletePost(
+  token: string,
+  id: string,
+): Promise<CreatePostResult> {
+  const res = await fetch(`${API_URL}/posts/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (res.status === 204) return { ok: true };
+
+  const data = (await res.json().catch(() => null)) as { erro?: string } | null;
+
+  return {
+    ok: false,
+    status: res.status,
+    erro: data?.erro ?? "Não foi possível excluir o post.",
+  };
+}

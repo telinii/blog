@@ -224,3 +224,46 @@ export async function getPost(req: Request, res: Response) {
     res.status(500).json({ erro: "Erro interno no servidor" });
   }
 }
+
+export async function deletePost(req: Request, res: Response) {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ erro: "ID inválido" });
+    return;
+  }
+
+  try {
+    // Busca antes de apagar por dois motivos: distinguir 404 de 403 e saber
+    // qual arquivo de capa ficou órfão depois que a linha sumir.
+    const existente = await prisma.post.findUnique({
+      where: { id },
+      select: { id: true, usuarioId: true, capa: true },
+    });
+
+    if (!existente) {
+      res.status(404).json({ erro: "Post não encontrado" });
+      return;
+    }
+
+    // 403, não 404: o post existe, mas não é seu.
+    if (existente.usuarioId !== req.user!.id) {
+      res.status(403).json({ erro: "Você só pode excluir seus próprios posts" });
+      return;
+    }
+
+    await prisma.post.delete({ where: { id } });
+
+    // Ninguém mais aponta para a capa: o arquivo sai do disco junto.
+    // removerCapa nunca lança, então uma falha aqui não desfaz a exclusão.
+    if (existente.capa) {
+      await removerCapa(existente.capa);
+    }
+
+    // 204: deu certo e não há corpo para devolver.
+    res.status(204).end();
+  } catch (error) {
+    console.error("Erro ao excluir post:", error);
+    res.status(500).json({ erro: "Erro interno no servidor" });
+  }
+}
