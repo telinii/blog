@@ -100,10 +100,14 @@ Scripts:
 | `GET` | `/` | — | Health check |
 | `POST` | `/users` | — | Cadastro; responde `202` genérico (novo ou e-mail existente) |
 | `POST` | `/login` | — | Retorna `{ token }` |
-| `POST` | `/posts` | Bearer | Cria post publicado (JSON ou multipart com `capa`; autor vem do token) |
+| `POST` | `/posts` | Bearer | Cria post (JSON ou multipart com `capa`; autor vem do token). `publicado: false` cria rascunho |
 | `GET` | `/posts` | — | Lista posts publicados, com autor e paginação (`limit`/`offset`) |
-| `PATCH` | `/posts/:id` | Bearer | Edita post (só autor; `403` caso contrário) |
-| `GET` | `/posts/:id` | — | Retorna um post publicado (`400` id inválido, `404` inexistente/rascunho) |
+| `PATCH` | `/posts/:id` | Bearer | Edita post (só autor; `403` caso contrário). Aceita `publicado` para publicar/despublicar |
+| `DELETE` | `/posts/:id` | Bearer | Apaga post (só autor; `403` caso contrário); a capa sai do disco |
+| `GET` | `/posts/:id` | — | Retorna um post (`400` id inválido, `404` inexistente). Rascunho só para o autor, com token |
+| `GET` | `/rascunhos` | Bearer | Rascunhos do dono do token, paginados, com `X-Total-Count` |
+| `GET` | `/users/me` | Bearer | Perfil do dono do token: `{ id, nome, bio, email }` |
+| `PATCH` | `/users/me` | Bearer | Atualiza `nome` e/ou `bio` do dono do token |
 
 ### Validação
 
@@ -111,8 +115,12 @@ Scripts:
   `senha` 10–20. Campos desconhecidos → `400`.
 - `POST /login`: `email` e `senha` nos mesmos limites.
 - `POST /posts`: `titulo` 1–100, `conteudo` 1–5000, `categoria` 1–50.
-  `publicado` e `data` são definidos pelo servidor. Posts novos nascem
-  publicados; a listagem e o detalhe públicos só devolvem `publicado: true`.
+  `data` é definido pelo servidor. `publicado` é opcional (`true`/`false` ou as
+  strings `"true"`/`"false"`, porque multipart só carrega texto): sem ele o post
+  nasce publicado, com `false` nasce rascunho. A listagem e o detalhe públicos só
+  devolvem `publicado: true` — o autor vê o próprio rascunho no detalhe.
+- `PATCH /users/me`: `nome` 1–25 e `bio` até 250, ambos opcionais, mas pelo
+  menos um precisa vir. `email` e `senha` ficam de fora de propósito.
 - `capa` (opcional): arquivo `capa` em `multipart/form-data`, JPG/PNG/WEBP/GIF/AVIF,
   até 5 MB. SVG é recusado de propósito (risco de XSS). O arquivo é gravado em
   `uploads/` com nome UUID e servido em `/uploads/...`.
@@ -132,13 +140,29 @@ curl "http://localhost:3000/posts?limit=10&offset=20" -D -
 `PATCH /posts/:id` aceita os mesmos campos, todos opcionais. O usuário do token
 precisa ser o autor (`403` caso contrário; `404` se o post não existe). Enviar
 `capa` troca a imagem (a antiga é apagada); `{"removerCapa":true}` remove a capa
-sem enviar arquivo.
+sem enviar arquivo. `{"publicado":true}` publica um rascunho e
+`{"publicado":false}` o devolve para rascunho.
+
+### Rascunhos
+
+`GET /rascunhos` devolve só os posts `publicado: false` do dono do token —
+o filtro vem do token, nunca da query, então não há como pedir o rascunho de
+outra pessoa. Usa a mesma paginação de `/posts` (padrão 20) e o mesmo
+`X-Total-Count`.
+
+`GET /posts/:id` responde `404` para rascunho de outra pessoa, com o mesmo
+corpo de um post inexistente: o status não confirma que ele existe.
+
+### Perfil
+
+`GET /users/me` e `PATCH /users/me` usam `"me"` em vez de `:id`: o alvo é
+sempre o dono do token. A resposta nunca inclui `senha`.
 
 ### Rate limit
 
 `POST /login`: 5 tentativas por IP a cada 15 minutos. `POST /users`: 10
-cadastros por IP por hora. `GET /posts` e `GET /posts/:id`: 120 requisições por
-IP por minuto. Passou disso, a resposta é `429` com `{ "erro": ... }` e o header
+cadastros por IP por hora. `GET /posts`, `GET /posts/:id` e `GET /rascunhos`: 120 requisições
+por IP por minuto. Passou disso, a resposta é `429` com `{ "erro": ... }` e o header
 `Retry-After`.
 
 Os contadores ficam em memória: reiniciar a API zera e cada instância tem o
