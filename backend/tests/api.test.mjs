@@ -814,3 +814,59 @@ test("GET /posts/:id com token inválido não vira 401 em rota pública", async 
   });
   assert.equal(res.status, 200);
 });
+
+test("GET /users/me devolve os dados do dono do token, sem senha", async () => {
+  const res = await fetch(`${BASE}/users/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert.equal(res.status, 200);
+
+  const me = await res.json();
+  assert.equal(me.id, fixtureId);
+  assert.equal(typeof me.nome, "string");
+  assert.equal(typeof me.bio, "string");
+  assert.equal("senha" in me, false);
+});
+
+test("GET /users/me sem token responde 401", async () => {
+  assert.equal((await fetch(`${BASE}/users/me`)).status, 401);
+});
+
+test("PATCH /users/me atualiza bio e nome", async () => {
+  const res = await fetch(`${BASE}/users/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ bio: "Escrevo sobre código.", nome: "Fixture Nova" }),
+  });
+  assert.equal(res.status, 200);
+
+  const me = await res.json();
+  assert.equal(me.bio, "Escrevo sobre código.");
+  assert.equal(me.nome, "Fixture Nova");
+  assert.equal("senha" in me, false);
+});
+
+test("PATCH /users/me vazio responde 400 e campo desconhecido também", async () => {
+  const vazio = await fetch(`${BASE}/users/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({}),
+  });
+  assert.equal(vazio.status, 400);
+
+  const desconhecido = await fetch(`${BASE}/users/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ email: "outro@example.com" }),
+  });
+  assert.equal(desconhecido.status, 400);
+});
+
+test("PATCH /users/me com bio acima de 250 responde 400", async () => {
+  const res = await fetch(`${BASE}/users/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ bio: "a".repeat(251) }),
+  });
+  assert.equal(res.status, 400);
+});

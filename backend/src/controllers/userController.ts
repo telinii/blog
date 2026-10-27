@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../prisma";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { loginSchema, userSchema } from "../schemas/user.schema";
+import { loginSchema, perfilSchema, userSchema } from "../schemas/user.schema";
 
 // The rules (and their types) live in src/schemas/user.schema.ts.
 // This file only decides what to do with the result.
@@ -97,6 +97,58 @@ export async function login(req: Request, res: Response) {
     // Same generic response as the other failures: the client never learns
     // whether the email exists, the password is wrong or the server broke.
     console.error("Erro no login:", error);
+    res.status(500).json({ erro: "Erro interno no servidor" });
+  }
+}
+// Campos que podem sair numa resposta de perfil. O select é o que garante
+// que "senha" nunca vaze: nada é devolvido por acidente.
+const CAMPOS_PUBLICOS = { id: true, nome: true, bio: true, email: true };
+
+// GET /users/me -> dados do dono do token.
+export async function getMe(req: Request, res: Response) {
+  try {
+    const usuario = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: CAMPOS_PUBLICOS,
+    });
+
+    // Token válido de uma conta que já não existe (apagada depois do login).
+    if (!usuario) {
+      res.status(404).json({ erro: "Usuário não encontrado" });
+      return;
+    }
+
+    res.status(200).json(usuario);
+  } catch (error) {
+    console.error("Erro ao buscar perfil:", error);
+    res.status(500).json({ erro: "Erro interno no servidor" });
+  }
+}
+
+// PATCH /users/me -> nome e bio do dono do token.
+export async function updateMe(req: Request, res: Response) {
+  const result = perfilSchema.safeParse(req.body);
+
+  if (!result.success) {
+    res.status(400).json({ erro: result.error.issues[0].message });
+    return;
+  }
+
+  try {
+    const usuario = await prisma.user.update({
+      where: { id: req.user!.id },
+      data: result.data,
+      select: CAMPOS_PUBLICOS,
+    });
+
+    res.status(200).json(usuario);
+  } catch (error: any) {
+    if (error.code === "P2025") {
+      res.status(404).json({ erro: "Usuário não encontrado" });
+      return;
+    }
+
+    console.error("Erro ao atualizar perfil:", error);
     res.status(500).json({ erro: "Erro interno no servidor" });
   }
 }

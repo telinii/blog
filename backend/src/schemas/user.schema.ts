@@ -24,3 +24,17 @@ export const loginSchema = z
 // Mudou a regra, o tipo acompanha.
 export type UserInput = z.infer<typeof userSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+// Edição do próprio perfil (PATCH /users/me).
+// Email e senha ficam de fora de propósito: trocar email mexe em identidade e
+// trocar senha exige a senha atual. Nenhum dos dois entra neste contrato.
+export const perfilSchema = z
+  .object({
+    nome: z.string().min(1).max(25).optional(),
+    bio: z.string().max(250).optional(),
+  })
+  .strict()
+  .refine((dados) => Object.keys(dados).length > 0, {
+    message: "Nenhum campo para atualizar",
+  });
+
+export type PerfilInput = z.infer<typeof perfilSchema>;
