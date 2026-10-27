@@ -3,8 +3,8 @@
 // da tela), sobe no meio e volta a deitar no alto (gargalo) — a inflexão fica
 // na metade direita.
 //
-// Começa fora do quadro de propósito: o "b" entra cortado pela borda esquerda,
-// e o pé das letras é cortado pela borda de baixo.
+// Começa fora do quadro de propósito: assim a fita entra cortada pela borda
+// esquerda, em vez de terminar solta no meio do hero.
 export const CURVA = "M -80 604 C 640 564 1080 334 1560 274";
 
 // A mesma ideia no espaço do fundo (viewBox 1600x900), deslocada para baixo:

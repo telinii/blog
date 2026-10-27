@@ -156,7 +156,7 @@
 }
 
 /* A palavra do hero. As letras são posicionadas pelo <textPath>, então o
-   tamanho aqui é em unidades do viewBox (1600x700), não em pixels de tela. */
+   tamanho aqui é em unidades do viewBox (1600x600), não em pixels de tela. */
 .palavra,
 .palavra-brilho {
   font-family: var(--font-sans);
