@@ -19,7 +19,8 @@ export default async function EditPostPage({
     redirect("/login");
   }
 
-  const post = await getPost(id);
+  // Com o token, o autor abre o próprio rascunho no formulário.
+  const post = await getPost(id, cookieStore.get("token")?.value);
   if (!post) notFound();
 
   const user = await getSessionUser();

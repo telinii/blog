@@ -87,8 +87,16 @@ export async function getPosts(
   return { posts: data, total: total ?? data.length };
 }
 
-export async function getPost(id: string): Promise<Post | null> {
-  const { status, data } = await apiFetch<Post>(`/posts/${id}`);
+// O token é opcional: com ele a API devolve também o rascunho do próprio
+// autor; sem ele, rascunho responde 404 como qualquer post inexistente.
+export async function getPost(
+  id: string,
+  token?: string,
+): Promise<Post | null> {
+  const { status, data } = await apiFetch<Post>(
+    `/posts/${id}`,
+    token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+  );
 
   // 404 = não existe, 400 = id malformado ("abc"): para o usuário dá no mesmo
   if (status === 404 || status === 400) return null;

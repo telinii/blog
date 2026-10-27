@@ -6,7 +6,7 @@ import { PostCover } from "@/components/post-cover";
 import { DeletePostButton } from "./delete-post-button";
 import { formatDate } from "@/lib/format";
 import { getPost } from "@/lib/api";
-import { getSessionUser } from "@/lib/session";
+import { getSessionToken, getSessionUser } from "@/lib/session";
 
 export async function generateMetadata({
   params,
@@ -14,7 +14,8 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const post = await getPost(id);
+  // Sem o token aqui, o título do rascunho sairia "Post não encontrado".
+  const post = await getPost(id, (await getSessionToken()) ?? undefined);
 
   if (!post) {
     return { title: "Post não encontrado" };
@@ -46,7 +47,9 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
 async function PostContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const post = await getPost(id);
+  // O token deixa o autor ver o próprio rascunho; para os outros a API
+  // responde 404, então nem chega aqui a informação de que ele existe.
+  const post = await getPost(id, (await getSessionToken()) ?? undefined);
 
   // Interrompe a renderização e mostra a página de not-found
   if (!post) notFound();
@@ -65,9 +68,18 @@ async function PostContent({ params }: { params: Promise<{ id: string }> }) {
       </div>
 
       <div className="mt-7 flex items-center justify-between gap-3">
-        <span className="inline-block rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
-          {post.categoria}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="inline-block rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
+            {post.categoria}
+          </span>
+          {/* Só o autor chega a ver um rascunho: a API responde 404 para os
+              outros. O selo é neutro de propósito, sem chamar atenção. */}
+          {!post.publicado && (
+            <span className="inline-block rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted">
+              Rascunho
+            </span>
+          )}
+        </div>
         {podeEditar && (
           <div className="flex items-center gap-4">
             <Link

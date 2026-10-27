@@ -2,6 +2,13 @@ import { cookies } from "next/headers";
 
 export type SessionUser = { id: number; email: string };
 
+// Token cru do cookie. Quem precisa repassá-lo para a API (para ver o próprio
+// rascunho, por exemplo) usa isto; para decidir o que mostrar na tela, use
+// getSessionUser.
+export async function getSessionToken(): Promise<string | null> {
+  return (await cookies()).get("token")?.value ?? null;
+}
+
 // Lê o usuário do JWT guardado no cookie httpOnly.
 // O payload é só decodificado, NÃO verificado: serve para decidir o que
 // mostrar na tela. Quem autoriza de verdade é a API, que valida a assinatura
