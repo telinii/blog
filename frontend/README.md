@@ -44,7 +44,7 @@ Acesse **http://localhost:3001**.
 | --- | --- |
 | `npm run dev` | Servidor de desenvolvimento em `http://localhost:3001` |
 | `npm run build` | Build de produção |
-| `npm start` | Serve o build em `http://localhost:3001` (exige `npm run build` antes) |
+| `npm start` | Serve o build em `http://localhost:3001` (exige `npm run build` antes; aborta se o build estiver mais velho que o código — `SKIP_BUILD_CHECK=1` ignora) |
 | `npm run lint` | ESLint |
 
 ## Rotas
@@ -124,5 +124,6 @@ frontend/src/
 | Porta 3001 ocupada | Encerre o processo anterior (`pkill -f 'next dev'`) |
 | Mudou `API_URL` e não refletiu | Reinicie o `npm run dev` |
 | `Could not find a production build` | Rode `npm run build` antes de `npm start` |
+| `Build de produção desatualizado` no `npm start` | `.next` é mais antigo que `src/` (típico depois de `git pull`); rotas novas não existiriam no bundle | Rode `npm run build` de novo — a checagem é o `scripts/check-build.mjs` no `prestart` |
 | `Cannot find module ...` após `git pull` | Rode `npm install` |
 | Prévia da capa aparece, mas o post sai sem foto | Arquivo acima de 5 MB ou formato não suportado | Usar JPG/PNG/WEBP/GIF/AVIF até 5 MB |
