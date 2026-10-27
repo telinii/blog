@@ -202,6 +202,36 @@ export async function listPosts(req: Request, res: Response) {
   }
 }
 
+export async function listDrafts(req: Request, res: Response) {
+  const { limit, offset } = paginacao(req.query);
+
+  // O filtro usa o id do token, nunca um id vindo da query: não existe
+  // jeito de pedir o rascunho de outra pessoa por esta rota.
+  const where = { usuarioId: req.user!.id, publicado: false };
+
+  try {
+    const [rascunhos, total] = await Promise.all([
+      prisma.post.findMany({
+        where,
+        // Mesma ordenação da listagem pública: o mais recente primeiro.
+        orderBy: [{ data: "desc" }, { id: "desc" }],
+        skip: offset,
+        take: limit,
+        include: {
+          usuario: { select: { id: true, nome: true, bio: true } },
+        },
+      }),
+      prisma.post.count({ where }),
+    ]);
+
+    res.setHeader("X-Total-Count", String(total));
+    res.status(200).json(rascunhos);
+  } catch (error) {
+    console.error("Erro ao listar rascunhos:", error);
+    res.status(500).json({ erro: "Erro interno no servidor" });
+  }
+}
+
 export async function getPost(req: Request, res: Response) {
   // req.params.id chega sempre como string — é assim que vem da URL
   const id = Number(req.params.id);

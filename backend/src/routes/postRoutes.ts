@@ -1,4 +1,4 @@
-import { createPost, deletePost, getPost, listPosts, updatePost } from "../controllers/postController";
+import { createPost, deletePost, getPost, listDrafts, listPosts, updatePost } from "../controllers/postController";
 import { Router } from "express";
 import { auth } from "../middlewares/auth";
 import { publicLimiter } from "../middlewares/rateLimit";
@@ -25,6 +25,12 @@ router.delete("/posts/:id", auth, deletePost);
 // Same URL as above, but a different HTTP method.
 // Express uses the METHOD to tell the two routes apart.
 router.get("/posts", publicLimiter, listPosts);
+
+// GET /rascunhos -> rascunhos do dono do token (listDrafts).
+// Rota separada de /posts/:id de propósito: o filtro pelo autor vem do
+// token, então esta listagem nunca mistura posts de duas pessoas.
+router.get("/rascunhos", auth, publicLimiter, listDrafts);
+
 // GET /posts/:id -> returns one post (getPost).
 // The :id part is a route parameter, available in req.params.id
 router.get("/posts/:id", publicLimiter, getPost);

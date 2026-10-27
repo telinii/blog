@@ -705,3 +705,65 @@ test("PATCH /posts/:id aceita publicado vindo como string do formulário", async
   assert.equal(res.status, 200);
   assert.equal((await res.json()).publicado, true);
 });
+test("GET /rascunhos sem token responde 401", async () => {
+  assert.equal((await fetch(`${BASE}/rascunhos`)).status, 401);
+});
+
+test("GET /rascunhos devolve só os rascunhos do dono do token", async () => {
+  const meu = await postAuth(
+    "/posts",
+    { titulo: "Meu rascunho", conteudo: "Conteudo", categoria: "Dev", publicado: false },
+    token,
+  );
+  const meuPost = await meu.json();
+
+  const alheio = await postAuth(
+    "/posts",
+    { titulo: "Rascunho alheio", conteudo: "Conteudo", categoria: "Dev", publicado: false },
+    outroToken,
+  );
+  const alheioPost = await alheio.json();
+
+  const res = await fetch(`${BASE}/rascunhos`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert.equal(res.status, 200);
+
+  const lista = await res.json();
+  assert.equal(lista.some((p) => p.id === meuPost.id), true);
+  assert.equal(lista.some((p) => p.id === alheioPost.id), false);
+  assert.equal(lista.every((p) => p.publicado === false), true);
+});
+
+test("GET /rascunhos não devolve post já publicado", async () => {
+  const criado = await postAuth(
+    "/posts",
+    { titulo: "Vai publicar mesmo", conteudo: "Conteudo", categoria: "Dev", publicado: false },
+    token,
+  );
+  const { id } = await criado.json();
+  await patchAuth(`/posts/${id}`, { publicado: true }, token);
+
+  const res = await fetch(`${BASE}/rascunhos`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const lista = await res.json();
+  assert.equal(lista.some((p) => p.id === id), false);
+});
+
+test("GET /rascunhos pagina e manda X-Total-Count", async () => {
+  for (let i = 0; i < 3; i += 1) {
+    await postAuth(
+      "/posts",
+      { titulo: `Rascunho ${i}`, conteudo: "Conteudo", categoria: "Dev", publicado: false },
+      token,
+    );
+  }
+
+  const res = await fetch(`${BASE}/rascunhos?limit=2&offset=0`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).length, 2);
+  assert.equal(Number(res.headers.get("x-total-count")) >= 3, true);
+});
