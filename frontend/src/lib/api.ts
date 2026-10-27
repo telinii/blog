@@ -215,3 +215,44 @@ export async function deletePost(
     erro: data?.erro ?? "Não foi possível excluir o post.",
   };
 }
+
+// Rascunhos do próprio autor. Diferente das listagens públicas, aqui um 401
+// é informação útil: a página usa para mandar de volta ao login.
+export type DraftsResult =
+  | { ok: true; posts: Post[] }
+  | { ok: false; status: number };
+
+export async function getDrafts(token: string): Promise<DraftsResult> {
+  const res = await fetch(`${API_URL}/rascunhos`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (res.status !== 200) return { ok: false, status: res.status };
+
+  return { ok: true, posts: (await res.json()) as Post[] };
+}
+
+// Publicar é só virar a chave: o resto do post já está salvo.
+export async function publicarPost(
+  token: string,
+  id: string,
+): Promise<CreatePostResult> {
+  const res = await fetch(`${API_URL}/posts/${id}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ publicado: true }),
+  });
+
+  if (res.status === 200) return { ok: true };
+
+  const data = (await res.json().catch(() => null)) as { erro?: string } | null;
+
+  return {
+    ok: false,
+    status: res.status,
+    erro: data?.erro ?? "Não foi possível publicar o post.",
+  };
+}

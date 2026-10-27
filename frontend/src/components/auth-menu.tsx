@@ -33,6 +33,10 @@ export async function AuthMenu() {
         Novo post
       </Link>
 
+      <Link href="/rascunhos" className={ghostLink}>
+        Rascunhos
+      </Link>
+
       {/* <form action={serverAction}> funciona sem JS: o Next injeta
           campos ocultos e o POST vai direto para a action. */}
       <form action={logoutAction}>
