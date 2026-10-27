@@ -45,6 +45,13 @@ export default async function RascunhosPage() {
         Textos que ainda não foram publicados. Ninguém mais consegue abri-los.
       </p>
 
+      <Link
+        href="/perfil"
+        className="mt-3 inline-block text-sm text-muted transition-colors hover:text-accent"
+      >
+        Editar perfil →
+      </Link>
+
       {rascunhos.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-line bg-surface/60 px-6 py-12 text-center">
           <p className="font-serif text-xl">Nenhum rascunho guardado.</p>

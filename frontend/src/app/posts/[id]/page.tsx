@@ -109,6 +109,11 @@ async function PostContent({ params }: { params: Promise<{ id: string }> }) {
           <time dateTime={post.data} className="text-muted">
             {formatDate(post.data)}
           </time>
+          {/* Só quando existe: bio vazia não reserva espaço. Duas linhas no
+              máximo para não empurrar o texto do post para baixo. */}
+          {post.usuario.bio && (
+            <p className="mt-1 line-clamp-2 text-muted">{post.usuario.bio}</p>
+          )}
         </div>
       </div>
 

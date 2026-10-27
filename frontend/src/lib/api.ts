@@ -256,3 +256,41 @@ export async function publicarPost(
     erro: data?.erro ?? "Não foi possível publicar o post.",
   };
 }
+
+export type Perfil = { id: number; nome: string; bio: string; email: string };
+
+// Perfil do dono do token. null cobre 401 (sessão vencida) e 404 (conta
+// apagada): para a tela dá no mesmo — precisa entrar de novo.
+export async function getMe(token: string): Promise<Perfil | null> {
+  const res = await fetch(`${API_URL}/users/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (res.status !== 200) return null;
+
+  return (await res.json()) as Perfil;
+}
+
+export async function updateProfile(
+  token: string,
+  dados: { nome?: string; bio?: string },
+): Promise<CreatePostResult> {
+  const res = await fetch(`${API_URL}/users/me`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(dados),
+  });
+
+  if (res.status === 200) return { ok: true };
+
+  const data = (await res.json().catch(() => null)) as { erro?: string } | null;
+
+  return {
+    ok: false,
+    status: res.status,
+    erro: data?.erro ?? "Não foi possível salvar o perfil.",
+  };
+}
