@@ -179,10 +179,10 @@ Base: `http://localhost:3000`
 | `POST` | `/login` | — | Autentica e retorna `{ token }` |
 | `POST` | `/posts` | Bearer token | Cria um post (JSON ou `multipart/form-data` com `capa`); `publicado: false` cria rascunho |
 | `PATCH` | `/posts/:id` | Bearer token (autor) | Edita o post; `403` se não for o autor; aceita `publicado` |
-| `DELETE` | `/posts/:id` | Bearer token (autor) | Apaga o post; `403` se não for o autor |
-| `GET` | `/posts` | — | Lista posts publicados com o autor |
+| `DELETE` | `/posts/:id` | Bearer token (autor) | Apaga o post e a capa do disco; `403` se não for o autor; responde `204` |
+| `GET` | `/posts` | — | Lista posts publicados com o autor, paginados (`limit`/`offset`, total em `X-Total-Count`) |
 | `GET` | `/posts/:id` | — | Retorna um post com o autor (`400` id inválido, `404` não encontrado); rascunho só para o autor |
-| `GET` | `/rascunhos` | Bearer token | Rascunhos do dono do token, paginados |
+| `GET` | `/rascunhos` | Bearer token | Rascunhos do dono do token, paginados (total em `X-Total-Count`) |
 | `GET` | `/users/me` | Bearer token | Perfil do dono do token |
 | `PATCH` | `/users/me` | Bearer token | Atualiza `nome` e `bio` do dono do token |
 
