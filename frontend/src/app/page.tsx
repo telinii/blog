@@ -1,14 +1,39 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { BlogWord } from "@/components/blog-word";
+import { Pagination } from "@/components/pagination";
 import { PostCover } from "@/components/post-cover";
 import { formatDate } from "@/lib/format";
-import { getPosts } from "@/lib/api";
+import { getPosts, POSTS_POR_PAGINA } from "@/lib/api";
 
 // Server Component: roda no servidor do Next, não no browser.
 // Por isso o fetch não sofre CORS e a API_URL não vaza para o cliente.
 
-export default function Home() {
+type Params = { searchParams: Promise<{ pagina?: string }> };
+
+// "abc", "0", "-3", "1.5" e ausente caem todos na página 1: um link velho ou
+// digitado à mão não pode virar erro.
+function paginaValida(bruto: string | undefined): number {
+  const n = Number(bruto);
+  return Number.isInteger(n) && n >= 1 ? n : 1;
+}
+
+// A página 1 é a canônica. Da 2 em diante, cada página responde por si.
+export async function generateMetadata({
+  searchParams,
+}: Params): Promise<Metadata> {
+  const pagina = paginaValida((await searchParams).pagina);
+
+  return {
+    alternates: {
+      canonical: pagina === 1 ? "/" : `/?pagina=${pagina}`,
+    },
+  };
+}
+
+export default function Home({ searchParams }: Params) {
   return (
     <main className="w-full">
       {/* Hero de largura total: a palavra atravessa a seção e é cortada pelas
@@ -32,15 +57,23 @@ export default function Home() {
 
       <div className="mx-auto w-full max-w-3xl px-6 pb-10 pt-6">
         <Suspense fallback={<PostListSkeleton />}>
-          <PostList />
+          {/* A Promise desce sem ser resolvida: com cacheComponents, a
+              leitura de searchParams precisa acontecer dentro do Suspense. */}
+          <PostList searchParams={searchParams} />
         </Suspense>
       </div>
     </main>
   );
 }
 
-async function PostList() {
-  const posts = await getPosts();
+async function PostList({ searchParams }: Params) {
+  const pagina = paginaValida((await searchParams).pagina);
+  const { posts, total } = await getPosts(pagina);
+  const totalPaginas = Math.max(1, Math.ceil(total / POSTS_POR_PAGINA));
+
+  // Página além do fim: 404, não redirect. Um link antigo não deve cair
+  // silenciosamente em outro conteúdo.
+  if (total > 0 && pagina > totalPaginas) notFound();
 
   if (posts.length === 0) {
     return (
@@ -54,8 +87,9 @@ async function PostList() {
   }
 
   return (
-    <ul>
-      {posts.map((post) => (
+    <>
+      <ul>
+        {posts.map((post) => (
         <li key={post.id} className="border-b border-line last:border-b-0">
           <article className="group flex items-start gap-5 py-8">
             <div className="min-w-0 flex-1">
@@ -99,8 +133,11 @@ async function PostList() {
             />
           </article>
         </li>
-      ))}
-    </ul>
+        ))}
+      </ul>
+
+      <Pagination pagina={pagina} totalPaginas={totalPaginas} />
+    </>
   );
 }
 

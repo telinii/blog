@@ -48,7 +48,7 @@ type ApiInit = {
 async function apiFetch<T>(
   path: string,
   init?: ApiInit,
-): Promise<{ status: number; data: T }> {
+): Promise<{ status: number; data: T; total: number | null }> {
   const res = await fetch(`${API_URL}${path}`, {
     method: init?.method,
     body: init?.body,
@@ -58,19 +58,33 @@ async function apiFetch<T>(
   // 204 e respostas de erro sem corpo não têm JSON: evita quebrar no parse
   const data = await res.json().catch(() => null);
 
-  return { status: res.status, data: data as T };
+  // Listagens mandam o total no header (X-Total-Count) para a paginação
+  // saber quantas páginas existem sem uma segunda chamada.
+  const totalBruto = res.headers.get("x-total-count");
+  const total = totalBruto === null ? null : Number(totalBruto);
+
+  return { status: res.status, data: data as T, total };
 }
 
 // ---------- leituras (lançam erro: quem trata é o error.tsx) ----------
 
-export async function getPosts(): Promise<Post[]> {
-  const { status, data } = await apiFetch<Post[]>("/posts");
+// Quantos posts por página na home. A API aceita até 50; 10 deixa a
+// paginação visível sem alongar demais a rolagem.
+export const POSTS_POR_PAGINA = 10;
+
+export async function getPosts(
+  pagina = 1,
+): Promise<{ posts: Post[]; total: number }> {
+  const offset = (pagina - 1) * POSTS_POR_PAGINA;
+  const { status, data, total } = await apiFetch<Post[]>(
+    `/posts?limit=${POSTS_POR_PAGINA}&offset=${offset}`,
+  );
 
   if (status !== 200) {
     throw new Error(`A API respondeu ${status}`);
   }
 
-  return data;
+  return { posts: data, total: total ?? data.length };
 }
 
 export async function getPost(id: string): Promise<Post | null> {
