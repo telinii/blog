@@ -1,6 +1,6 @@
 import { createPost, deletePost, getPost, listDrafts, listPosts, updatePost } from "../controllers/postController";
 import { Router } from "express";
-import { auth } from "../middlewares/auth";
+import { auth, authOpcional } from "../middlewares/auth";
 import { publicLimiter } from "../middlewares/rateLimit";
 import { uploadCapa } from "../middlewares/uploadCapa";
 
@@ -33,6 +33,8 @@ router.get("/rascunhos", auth, publicLimiter, listDrafts);
 
 // GET /posts/:id -> returns one post (getPost).
 // The :id part is a route parameter, available in req.params.id
-router.get("/posts/:id", publicLimiter, getPost);
+// authOpcional: sem token a rota continua pública; com token, o autor
+// enxerga o próprio rascunho.
+router.get("/posts/:id", authOpcional, publicLimiter, getPost);
 
 export default router;

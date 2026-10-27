@@ -767,3 +767,50 @@ test("GET /rascunhos pagina e manda X-Total-Count", async () => {
   assert.equal((await res.json()).length, 2);
   assert.equal(Number(res.headers.get("x-total-count")) >= 3, true);
 });
+
+test("GET /posts/:id devolve o próprio rascunho para o dono", async () => {
+  const criado = await postAuth(
+    "/posts",
+    { titulo: "Rascunho do dono", conteudo: "Conteudo", categoria: "Dev", publicado: false },
+    token,
+  );
+  const { id } = await criado.json();
+
+  const res = await fetch(`${BASE}/posts/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).id, id);
+});
+
+test("GET /posts/:id de rascunho alheio responde 404 igual a post inexistente", async () => {
+  const criado = await postAuth(
+    "/posts",
+    { titulo: "Rascunho secreto", conteudo: "Conteudo", categoria: "Dev", publicado: false },
+    token,
+  );
+  const { id } = await criado.json();
+
+  const alheio = await fetch(`${BASE}/posts/${id}`, {
+    headers: { Authorization: `Bearer ${outroToken}` },
+  });
+  const inexistente = await fetch(`${BASE}/posts/999999`);
+
+  assert.equal(alheio.status, 404);
+  assert.equal(alheio.status, inexistente.status);
+  assert.deepEqual(await alheio.json(), await inexistente.json());
+});
+
+test("GET /posts/:id com token inválido não vira 401 em rota pública", async () => {
+  const criado = await postAuth(
+    "/posts",
+    { titulo: "Publicado com token podre", conteudo: "Conteudo", categoria: "Dev" },
+    token,
+  );
+  const { id } = await criado.json();
+
+  const res = await fetch(`${BASE}/posts/${id}`, {
+    headers: { Authorization: "Bearer nao-e-um-token" },
+  });
+  assert.equal(res.status, 200);
+});

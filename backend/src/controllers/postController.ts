@@ -243,8 +243,8 @@ export async function getPost(req: Request, res: Response) {
   }
 
   try {
-    const post = await prisma.post.findFirst({
-      where: { id, publicado: true },
+    const post = await prisma.post.findUnique({
+      where: { id },
       include: {
         usuario: {
           // Mesmo select do listPosts: sem email, sem senha.
@@ -256,6 +256,13 @@ export async function getPost(req: Request, res: Response) {
     // findUnique devolve null quando não existe — não lança erro.
     // Por isso 404 é uma decisão nossa, não um catch de P2025.
     if (!post) {
+      res.status(404).json({ erro: "Post não encontrado" });
+      return;
+    }
+
+    // Rascunho é do autor e de mais ninguém. 404, não 403: 403 confirmaria
+    // que o post existe. req.user vem do authOpcional desta rota.
+    if (!post.publicado && post.usuarioId !== req.user?.id) {
       res.status(404).json({ erro: "Post não encontrado" });
       return;
     }
