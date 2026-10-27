@@ -35,3 +35,14 @@ export const cadastroLimiter = rateLimit({
   skip: skipInTests,
   message: { erro: "Muitos cadastros a partir deste IP. Tente de novo em 1 hora." },
 });
+
+// Leitura pública também tem limite: evita scraping/DoS na listagem e no detalhe.
+// 120 req/min por IP é folgado para navegação normal.
+export const publicLimiter = rateLimit({
+  windowMs: minutos(1),
+  limit: limite("PUBLIC_RATE_LIMIT_MAX", 120),
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  skip: skipInTests,
+  message: { erro: "Muitas requisições. Tente de novo em instantes." },
+});

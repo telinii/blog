@@ -14,6 +14,16 @@ if (!process.env.JWT_SECRET) {
 // Creates the Express application
 const app = express();
 
+// Não anuncia o framework nas respostas (fingerprint desnecessário).
+app.disable("x-powered-by");
+
+// Impede o navegador de "adivinhar" o tipo de um arquivo servido.
+// Vale para a API e para /uploads (imagens).
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  next();
+});
+
 // Atrás de um proxy (Railway, Nginx...) o IP real do cliente chega em
 // X-Forwarded-For. Sem isto todo mundo parece vir do mesmo IP e o rate limit
 // derruba todos juntos. Só liga com TRUST_PROXY=1: aceitar esse header sem um

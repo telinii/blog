@@ -3,6 +3,25 @@ import { prisma } from "../prisma";
 import { postSchema, updatePostSchema } from "../schemas/post.schema";
 import { removerCapa, salvarCapa } from "../uploads";
 
+const LIMITE_PADRAO = 20;
+const LIMITE_MAX = 50;
+
+// Lê ?limit e ?offset com valores seguros. Parâmetro ausente/inválido cai no
+// padrão; nunca deixa o cliente pedir a tabela inteira.
+function paginacao(query: Request["query"]) {
+  const limiteBruto = typeof query.limit === "string" ? Number(query.limit) : NaN;
+  const offsetBruto = typeof query.offset === "string" ? Number(query.offset) : NaN;
+
+  return {
+    limit:
+      Number.isInteger(limiteBruto) && limiteBruto > 0
+        ? Math.min(limiteBruto, LIMITE_MAX)
+        : LIMITE_PADRAO,
+    offset:
+      Number.isInteger(offsetBruto) && offsetBruto >= 0 ? offsetBruto : 0,
+  };
+}
+
 export async function createPost(req: Request, res: Response) {
   // Runs the validation BEFORE touching the database.
   // safeParse never throws: it returns success/data or success/error.
@@ -35,6 +54,7 @@ export async function createPost(req: Request, res: Response) {
         titulo: titulo,
         conteudo: conteudo,
         capa: caminhoCapa,
+        publicado: true,
         usuario: { connect: { id: usuarioId } }
       },
     });
@@ -135,23 +155,32 @@ export async function updatePost(req: Request, res: Response) {
 }
 
 export async function listPosts(req: Request, res: Response) {
-  try {
-    // findMany without "where" returns ALL posts.
-    // "include: { usuario: true }" brings the author nested inside each post,
-    // using the 1:N relation (a post belongs to one user).
-    const posts = await prisma.post.findMany({
-      // Mais recente primeiro: sem isso o banco devolve na ordem em que as
-      // linhas foram inseridas, e o post novo cai no fim da lista.
-      orderBy: { data: "desc" },
-      include: {
-        usuario: {
-          // Nunca devolva email aqui: é endpoint público.
-          select: { id: true, nome: true, bio: true },
-        },
-      },
-    });
+  const { limit, offset } = paginacao(req.query);
 
-    // 200 = OK. Returns the list of posts, each with its author
+  try {
+    // Só posts publicados. Um rascunho (publicado = false) não aparece
+    // na listagem pública nem no detalhe.
+    const where = { publicado: true };
+
+    const [posts, total] = await Promise.all([
+      prisma.post.findMany({
+        where,
+        // Mais recente primeiro. O id desempata posts com a mesma data.
+        orderBy: [{ data: "desc" }, { id: "desc" }],
+        skip: offset,
+        take: limit,
+        include: {
+          usuario: {
+            // Nunca devolva email aqui: é endpoint público.
+            select: { id: true, nome: true, bio: true },
+          },
+        },
+      }),
+      prisma.post.count({ where }),
+    ]);
+
+    // Total para o frontend montar a paginação sem uma segunda chamada.
+    res.setHeader("X-Total-Count", String(total));
     res.status(200).json(posts);
   } catch (error) {
     // Without this try/catch the rejection would reach Express's default
@@ -172,8 +201,8 @@ export async function getPost(req: Request, res: Response) {
   }
 
   try {
-    const post = await prisma.post.findUnique({
-      where: { id },
+    const post = await prisma.post.findFirst({
+      where: { id, publicado: true },
       include: {
         usuario: {
           // Mesmo select do listPosts: sem email, sem senha.

@@ -77,8 +77,8 @@ test("POST /users responde 429 depois do limite", async () => {
       nome: "Rate", email: `rate.${stamp}.${i}@example.com`, senha,
     });
 
-  assert.equal((await criar(1)).status, 201);
-  assert.equal((await criar(2)).status, 201);
+  assert.equal((await criar(1)).status, 202);
+  assert.equal((await criar(2)).status, 202);
 
   const bloqueado = await criar(3);
   assert.equal(bloqueado.status, 429);

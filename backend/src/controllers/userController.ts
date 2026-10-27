@@ -7,6 +7,13 @@ import { loginSchema, userSchema } from "../schemas/user.schema";
 // The rules (and their types) live in src/schemas/user.schema.ts.
 // This file only decides what to do with the result.
 
+// Resposta única para cadastro novo e e-mail já existente. Assim a API não
+// confirma se uma conta existe. Quem já tem conta precisa usar a senha dela.
+const RESPOSTA_CADASTRO = {
+  mensagem:
+    "Cadastro recebido. Se o e-mail já existir, use a senha da conta existente.",
+};
+
 export async function createUser(req: Request, res: Response) {
   // safeParse never throws: it returns { success: true, data }
   // or { success: false, error }.
@@ -27,24 +34,23 @@ export async function createUser(req: Request, res: Response) {
   try {
     const hash = await bcrypt.hash(senha, 10);
 
-    // Creates the user in the database with the validated data
-    const user = await prisma.user.create({
+    // Cria o usuário. O hash roda antes mesmo quando o e-mail já existe,
+    // para que o tempo de resposta não entregue a existência da conta.
+    await prisma.user.create({
       data: {
         nome: nome,
         email: email,
         bio: bio,
         senha: hash,
       },
-      // select what the create can return
-      select: { id: true, nome: true, email: true, bio: true }
     });
 
-    // 201 = created. Returns the created user (with the auto-generated id)
-    res.status(201).json(user);
+    // 202 = pedido aceito. Não devolve id nem dados do usuário.
+    res.status(202).json(RESPOSTA_CADASTRO);
   } catch (error: any) {
     if (error.code === "P2002") {
-      // email já existe -> avisa o cliente de forma amigável
-      res.status(409).json({ erro: "Email já cadastrado" });
+      // E-mail já existe: resposta idêntica à do cadastro novo.
+      res.status(202).json(RESPOSTA_CADASTRO);
     }
     else {
       // qualquer outro erro -> resposta genérica, sem stack trace

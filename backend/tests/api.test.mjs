@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import mariadb from "mariadb";
 
 dotenv.config({ quiet: true });
 
@@ -74,6 +75,10 @@ const patchAuth = (path, body, t) =>
 const sign = (payload, algorithm = "HS256") =>
   jwt.sign(payload, SECRET, { expiresIn: "1h", algorithm });
 
+// O cadastro não devolve mais o id (resposta genérica). O id vem do token.
+const tokenPayload = (t) =>
+  JSON.parse(Buffer.from(t.split(".")[1], "base64url").toString("utf8"));
+
 // email sintaticamente válido com exatamente `total` caracteres,
 // para testar o limite da coluna VARCHAR(191)
 function longEmail(total) {
@@ -122,19 +127,19 @@ before(async () => {
   const created = await post("/users", {
     nome: "Fixture", email: fixtureEmail, bio: "usuario de teste", senha,
   });
-  assert.equal(created.status, 201, "fixture: POST /users deveria criar o usuario");
-  fixtureId = (await created.json()).id;
+  assert.equal(created.status, 202, "fixture: POST /users deveria aceitar o cadastro");
 
   const login = await post("/login", { email: fixtureEmail, senha });
   assert.equal(login.status, 200, "fixture: POST /login deveria autenticar");
   token = (await login.json()).token;
+  fixtureId = tokenPayload(token).id;
 
   // Segundo usuário: serve para provar que ninguém edita post alheio.
   const outroEmail = `outro.${stamp}@example.com`;
   const outro = await post("/users", {
     nome: "Outro", email: outroEmail, bio: "nao e dono", senha,
   });
-  assert.equal(outro.status, 201, "fixture: segundo usuário deveria ser criado");
+  assert.equal(outro.status, 202, "fixture: segundo usuário deveria ser aceito");
 
   const loginOutro = await post("/login", { email: outroEmail, senha });
   assert.equal(loginOutro.status, 200, "fixture: segundo login deveria autenticar");
@@ -172,23 +177,36 @@ test("JSON malformado responde 400 em JSON", async () => {
 
 // ---------- usuarios ----------
 
-test("POST /users válido responde 201 sem senha", async () => {
+test("respostas não anunciam Express e têm nosniff", async () => {
+  const res = await fetch(`${BASE}/`);
+  assert.equal(res.headers.get("x-powered-by"), null);
+  assert.equal(res.headers.get("x-content-type-options"), "nosniff");
+});
+
+test("POST /users válido responde 202 sem dados do usuário", async () => {
   const res = await post("/users", {
     nome: "Maria", email: `maria.${stamp}@example.com`, bio: "Learning dev", senha,
   });
-  assert.equal(res.status, 201);
+  assert.equal(res.status, 202);
   const body = await res.json();
-  assert.equal(typeof body.id, "number");
-  assert.equal(body.email, `maria.${stamp}@example.com`);
+  assert.equal(typeof body.mensagem, "string");
+  assert.equal("id" in body, false);
+  assert.equal("email" in body, false);
   assert.equal("senha" in body, false);
 });
 
-test("POST /users com email duplicado responde 409", async () => {
-  const res = await post("/users", {
-    nome: "Maria", email: fixtureEmail, bio: "x", senha,
+test("POST /users novo e duplicado têm resposta idêntica", async () => {
+  const email = `igual.${stamp}@example.com`;
+  const primeiro = await post("/users", {
+    nome: "Igual", email, bio: "x", senha,
   });
-  assert.equal(res.status, 409);
-  assert.equal(typeof (await res.json()).erro, "string");
+  const segundo = await post("/users", {
+    nome: "Igual", email, bio: "x", senha,
+  });
+
+  assert.equal(primeiro.status, 202);
+  assert.equal(segundo.status, 202);
+  assert.deepEqual(await primeiro.json(), await segundo.json());
 });
 
 test("POST /users com senha curta responde 400", async () => {
@@ -207,14 +225,14 @@ test("POST /users com email acima de 191 chars responde 400", async () => {
   assert.equal(typeof (await res.json()).erro, "string");
 });
 
-test("POST /users sem bio responde 201 e grava bio vazia", async () => {
+test("POST /users sem bio responde 202 genérico", async () => {
   const res = await post("/users", {
     nome: "Sem Bio", email: `sembio.${stamp}@example.com`, senha,
   });
-  assert.equal(res.status, 201);
+  assert.equal(res.status, 202);
 
   const body = await res.json();
-  assert.equal(body.bio, "");
+  assert.equal(typeof body.mensagem, "string");
   assert.equal("senha" in body, false);
 });
 
@@ -311,7 +329,7 @@ test("POST /posts válido responde 201 com autor do token", async () => {
   assert.equal(res.status, 201);
   const body = await res.json();
   assert.equal(body.usuarioId, fixtureId);
-  assert.equal(body.publicado, false);
+  assert.equal(body.publicado, true);
   assert.equal(typeof body.data, "string");
 });
 
@@ -323,18 +341,71 @@ test("POST /posts com token de usuário inexistente responde 400", async () => {
   assert.equal(res.status, 400);
 });
 
-test("GET /posts responde 200, traz autor e nunca senha", async () => {
+test("GET /posts responde 200, traz autor, só publicados e nunca senha", async () => {
   const res = await fetch(`${BASE}/posts`);
   assert.equal(res.status, 200);
 
   const body = await res.json();
   assert.equal(Array.isArray(body), true);
   assert.equal(body.length > 0, true);
+  assert.equal(body.every((p) => p.publicado === true), true);
 
   const created = body.find((p) => p.titulo === "Post de teste" && p.usuarioId === fixtureId);
   assert.ok(created, "o post criado deveria aparecer na listagem");
   assert.equal("senha" in created.usuario, false);
   assert.equal(JSON.stringify(body).includes("senha"), false);
+});
+
+test("GET /posts pagina com limit/offset e devolve X-Total-Count", async () => {
+  const res = await fetch(`${BASE}/posts?limit=1&offset=0`);
+  assert.equal(res.status, 200);
+
+  const body = await res.json();
+  assert.equal(body.length, 1);
+
+  const total = Number(res.headers.get("x-total-count"));
+  assert.equal(Number.isInteger(total), true);
+  assert.equal(total >= 1, true);
+
+  // limit acima do máximo é cortado em 50, não derruba a API.
+  const grande = await fetch(`${BASE}/posts?limit=999`);
+  assert.equal(grande.status, 200);
+  assert.equal((await grande.json()).length <= 50, true);
+});
+
+test("post não publicado não aparece na listagem nem no detalhe", async (t) => {
+  if (EXTERNAL || !TEST_DB_URL) return t.skip("precisa do banco de teste local");
+
+  const criado = await postAuth(
+    "/posts",
+    { titulo: "Rascunho de teste", conteudo: "nao deve vazar", categoria: "Dev" },
+    token,
+  );
+  assert.equal(criado.status, 201);
+  const { id } = await criado.json();
+
+  const url = new URL(TEST_DB_URL);
+  const conexao = await mariadb.createConnection({
+    host: url.hostname,
+    port: Number(url.port || 3306),
+    user: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password),
+    database: url.pathname.slice(1),
+    allowPublicKeyRetrieval: true,
+  });
+
+  try {
+    await conexao.query("UPDATE Post SET publicado = false WHERE id = ?", [id]);
+
+    const lista = await (await fetch(`${BASE}/posts?limit=50`)).json();
+    assert.equal(lista.some((p) => p.id === id), false);
+
+    const detalhe = await fetch(`${BASE}/posts/${id}`);
+    assert.equal(detalhe.status, 404);
+  } finally {
+    await conexao.query("DELETE FROM Post WHERE id = ?", [id]);
+    await conexao.end();
+  }
 });
 
 // ---------- capa ----------
@@ -362,6 +433,7 @@ test("POST /posts com capa salva a imagem e devolve o caminho", async () => {
   const imagem = await fetch(`${BASE}${body.capa}`);
   assert.equal(imagem.status, 200);
   assert.equal(imagem.headers.get("content-type"), "image/png");
+  assert.equal(imagem.headers.get("x-content-type-options"), "nosniff");
 });
 
 test("POST /posts recusa arquivo que não é imagem", async () => {

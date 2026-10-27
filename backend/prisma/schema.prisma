@@ -29,8 +29,10 @@ model Post {
   // Foto de capa opcional. Guarda o caminho público (/uploads/arquivo.ext),
   // não o binário: a imagem fica no disco do servidor.
   capa String?
-  publicado Boolean @default(false)
+  publicado Boolean @default(true)
   data DateTime @default(now())
   usuarioId Int
   usuario User @relation(fields: [usuarioId], references: [id])
+
+  @@index([publicado, data])
 }

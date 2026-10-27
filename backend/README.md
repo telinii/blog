@@ -98,12 +98,12 @@ Scripts:
 | Método | Rota | Auth | Descrição |
 | --- | --- | --- | --- |
 | `GET` | `/` | — | Health check |
-| `POST` | `/users` | — | Cria usuário (retorna sem `senha`) |
+| `POST` | `/users` | — | Cadastro; responde `202` genérico (novo ou e-mail existente) |
 | `POST` | `/login` | — | Retorna `{ token }` |
-| `POST` | `/posts` | Bearer | Cria post (JSON ou multipart com `capa`; autor vem do token) |
-| `GET` | `/posts` | — | Lista posts com autor (sem `senha`) |
+| `POST` | `/posts` | Bearer | Cria post publicado (JSON ou multipart com `capa`; autor vem do token) |
+| `GET` | `/posts` | — | Lista posts publicados, com autor e paginação (`limit`/`offset`) |
 | `PATCH` | `/posts/:id` | Bearer | Edita post (só autor; `403` caso contrário) |
-| `GET` | `/posts/:id` | — | Retorna um post com autor (`400` id inválido, `404` inexistente) |
+| `GET` | `/posts/:id` | — | Retorna um post publicado (`400` id inválido, `404` inexistente/rascunho) |
 
 ### Validação
 
@@ -111,10 +111,21 @@ Scripts:
   `senha` 10–20. Campos desconhecidos → `400`.
 - `POST /login`: `email` e `senha` nos mesmos limites.
 - `POST /posts`: `titulo` 1–100, `conteudo` 1–5000, `categoria` 1–50.
-  `publicado` e `data` são definidos pelo servidor.
+  `publicado` e `data` são definidos pelo servidor. Posts novos nascem
+  publicados; a listagem e o detalhe públicos só devolvem `publicado: true`.
 - `capa` (opcional): arquivo `capa` em `multipart/form-data`, JPG/PNG/WEBP/GIF/AVIF,
   até 5 MB. SVG é recusado de propósito (risco de XSS). O arquivo é gravado em
   `uploads/` com nome UUID e servido em `/uploads/...`.
+
+### Paginação
+
+`GET /posts` aceita `limit` (padrão 20, máximo 50) e `offset` (padrão 0).
+A resposta continua sendo um array; o total de posts publicados vem no header
+`X-Total-Count`.
+
+```bash
+curl "http://localhost:3000/posts?limit=10&offset=20" -D -
+```
 
 ### Edição
 
@@ -126,12 +137,14 @@ sem enviar arquivo.
 ### Rate limit
 
 `POST /login`: 5 tentativas por IP a cada 15 minutos. `POST /users`: 10
-cadastros por IP por hora. Passou disso, a resposta é `429` com
-`{ "erro": ... }` e o header `Retry-After`.
+cadastros por IP por hora. `GET /posts` e `GET /posts/:id`: 120 requisições por
+IP por minuto. Passou disso, a resposta é `429` com `{ "erro": ... }` e o header
+`Retry-After`.
 
 Os contadores ficam em memória: reiniciar a API zera e cada instância tem o
 seu (com mais de uma instância, troque o store por um compartilhado). Ajuste
-com `LOGIN_RATE_LIMIT_MAX` e `CADASTRO_RATE_LIMIT_MAX`.
+com `LOGIN_RATE_LIMIT_MAX`, `CADASTRO_RATE_LIMIT_MAX` e
+`PUBLIC_RATE_LIMIT_MAX`.
 
 Atrás de proxy, defina `TRUST_PROXY=1` para o Express usar o IP de
 `X-Forwarded-For`. Sem isso todo request parece vir do mesmo IP e o limite
@@ -143,10 +156,10 @@ aceito e qualquer cliente falsifica o IP para escapar do limite.
 - `400` — validação, JSON inválido ou imagem inválida (formato/tamanho)
 - `401` — token ausente, inválido ou credenciais erradas
 - `403` — tentativa de editar post de outra pessoa
-- `404` — rota inexistente (JSON)
-- `409` — e-mail já cadastrado
+- `404` — rota inexistente, post inexistente ou post não publicado (JSON)
+- `202` — cadastro aceito; resposta idêntica para e-mail novo ou existente
 - `413` — body acima de 100kb
-- `429` — rate limit de login ou cadastro excedido
+- `429` — rate limit de login, cadastro ou leitura pública
 - `500` — erro interno genérico, sem stack trace
 
 ## Testando a API
@@ -211,9 +224,17 @@ migrations) e `JWT_SECRET` (lida do `.env`).
 
 - Senha hasheada com bcrypt (10 rounds), nunca retornada em resposta.
 - Login com resposta idêntica para e-mail inexistente e senha errada.
+- Cadastro com resposta `202` idêntica para e-mail novo ou já existente, sem
+  devolver id/dados da conta. (Eliminação completa de enumeração exige
+  verificação de e-mail; sem esse fluxo, o login continua sendo o único oráculo,
+  limitado a 5 tentativas/15min.)
+- Listagem e detalhe públicos só devolvem `publicado: true`; rascunhos não vazam.
 - JWT HS256 com expiração de 1h; algoritmo fixado no `verify`.
 - Autor do post vem do token, nunca do body (campo `usuarioId` é rejeitado).
 - `PATCH /posts/:id` exige que o usuário do token seja o autor (`403`).
-- Rate limit por IP no login (5/15min) e no cadastro (10/hora).
+- Rate limit por IP no login (5/15min), cadastro (10/hora) e leitura pública
+  (120/min).
 - Upload valida MIME e tamanho, gera nome aleatório e recusa SVG.
+- `X-Content-Type-Options: nosniff` em todas as respostas.
+- `X-Powered-By` desligado na API e no Next.
 - Erros inesperados retornam JSON genérico, sem stack trace.

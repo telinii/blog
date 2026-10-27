@@ -1,6 +1,7 @@
 import { createPost, getPost, listPosts, updatePost } from "../controllers/postController";
 import { Router } from "express";
 import { auth } from "../middlewares/auth";
+import { publicLimiter } from "../middlewares/rateLimit";
 import { uploadCapa } from "../middlewares/uploadCapa";
 
 
@@ -19,9 +20,9 @@ router.patch("/posts/:id", auth, uploadCapa, updatePost);
 // GET /posts -> lists all posts (listPosts).
 // Same URL as above, but a different HTTP method.
 // Express uses the METHOD to tell the two routes apart.
-router.get("/posts", listPosts);
+router.get("/posts", publicLimiter, listPosts);
 // GET /posts/:id -> returns one post (getPost).
 // The :id part is a route parameter, available in req.params.id
-router.get("/posts/:id", getPost);
+router.get("/posts/:id", publicLimiter, getPost);
 
 export default router;
