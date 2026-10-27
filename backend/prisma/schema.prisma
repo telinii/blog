@@ -16,7 +16,7 @@ model User {
   id Int  @id @default(autoincrement())
   nome String
   email String @unique
-  bio String
+  bio String @db.VarChar(250)
   senha String
   posts Post[]
 }

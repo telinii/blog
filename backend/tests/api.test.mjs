@@ -870,3 +870,14 @@ test("PATCH /users/me com bio acima de 250 responde 400", async () => {
   });
   assert.equal(res.status, 400);
 });
+
+test("PATCH /users/me aceita bio de 250 caracteres (limite do schema)", async () => {
+  const bio = "a".repeat(250);
+  const res = await fetch(`${BASE}/users/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ bio }),
+  });
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).bio.length, 250);
+});
