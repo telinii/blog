@@ -1,0 +1,10 @@
+node_modules
+dist
+src/generated
+uploads
+.env
+.env.*
+tests
+*.md
+.git
+.DS_Store

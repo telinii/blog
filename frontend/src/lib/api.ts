@@ -4,6 +4,12 @@
 
 const API_URL = process.env.API_URL ?? "http://localhost:3000";
 
+// URL que o NAVEGADOR usa para buscar as capas. Em Docker a API vive em
+// `http://backend:3000`, que só existe na rede interna dos containers: o
+// `<img src>` renderizado no servidor precisa de um endereço público. Sem
+// PUBLIC_API_URL, cai na API_URL (caso do `npm run dev`).
+const PUBLIC_API_URL = process.env.PUBLIC_API_URL ?? API_URL;
+
 export type Author = { id: number; nome: string; bio: string };
 export type Post = {
   id: number;
@@ -27,7 +33,7 @@ export type NewPost = {
 // (/uploads/...) viram absolutos; URLs externas passam intactas.
 export function assetUrl(caminho: string): string {
   if (/^https?:\/\//i.test(caminho)) return caminho;
-  return `${API_URL}${caminho}`;
+  return `${PUBLIC_API_URL}${caminho}`;
 }
 
 export type NewUser = {

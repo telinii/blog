@@ -1,0 +1,75 @@
+# Sobe o blog inteiro — banco, API e frontend — com um comando:
+#
+#   cp .env.docker.example .env
+#   docker compose up --build
+#
+# Frontend em http://localhost:3001, API em http://localhost:3000.
+name: blog
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-bloggers}
+      MYSQL_USER: ${MYSQL_USER:-blog}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-blog}
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      # O backend só sobe depois que o MySQL aceita conexão; sem isso o
+      # `prisma migrate deploy` corre contra um banco ainda inicializando.
+      test:
+        ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER:-blog}:${MYSQL_PASSWORD:-blog}@db:3306/${MYSQL_DATABASE:-bloggers}
+      # Sem valor padrão de propósito: JWT_SECRET fraco em produção é sessão
+      # forjável. O compose recusa subir se não estiver no .env.
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env (veja .env.docker.example)}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+    ports:
+      - "3000:3000"
+    volumes:
+      # Capas enviadas ficam fora do container: `docker compose down` não
+      # apaga as imagens dos posts.
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    environment:
+      # Rede interna: é o servidor do Next que chama a API.
+      API_URL: http://backend:3000
+      # Endereço público das capas, usado no HTML que chega ao navegador.
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000}
+    ports:
+      - "3001:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  db:
+  uploads:

@@ -167,8 +167,33 @@ servidas pela API em `/uploads/<uuid>.<ext>`. O campo `capa` guarda esse
 caminho, não o binário.
 
 Em produção com disco efêmero (Railway, containers), essa pasta some a cada
-deploy. Nesse caso use um volume persistente ou um storage externo (S3/R2) e
-guarde a URL completa no campo `capa`.
+deploy. No `docker compose` ela está no volume `uploads`; em outros hosts use
+um volume persistente ou um storage externo (S3/R2) e guarde a URL completa no
+campo `capa`.
+
+## Docker (banco + API + frontend)
+
+Atalho para ver tudo rodando sem instalar Node nem MySQL na máquina:
+
+```bash
+cp .env.docker.example .env    # edite o JWT_SECRET
+docker compose up --build
+```
+
+- interface: **http://localhost:3001**
+- API: **http://localhost:3000**
+
+O que cada serviço faz:
+
+- **`db`** — MySQL 8 com healthcheck; a API só sobe depois que ele aceita conexão.
+- **`backend`** — aplica `prisma migrate deploy` no boot (`docker-entrypoint.sh`),
+  roda com usuário sem root e guarda as capas no volume `uploads`.
+- **`frontend`** — build com `output: "standalone"`; conversa com a API pela rede
+  interna (`API_URL=http://backend:3000`) e publica as capas com
+  `PUBLIC_API_URL`, que é o endereço que o navegador consegue alcançar.
+
+`docker compose down` preserva banco e capas; `docker compose down -v` apaga os
+dois volumes. As variáveis e os padrões estão em `.env.docker.example`.
 
 ## Endpoints da API
 
