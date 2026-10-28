@@ -1,5 +1,7 @@
 # Blog
 
+[![CI](https://github.com/telinii/blog/actions/workflows/ci.yml/badge.svg)](https://github.com/telinii/blog/actions/workflows/ci.yml)
+
 Aplicação de blog full stack: API REST com autenticação JWT + interface web em Next.js.
 
 O projeto é dividido em dois apps independentes:
@@ -271,6 +273,10 @@ Variáveis opcionais:
 
 - `BASE_URL` — usa um servidor já no ar e pula o spawn e as migrations
 - `JWT_SECRET` — lida do `backend/.env`
+
+Os mesmos testes rodam no CI (`.github/workflows/ci.yml`) a cada push na `main`
+e em pull request: MySQL 8 como serviço, `prisma migrate deploy` no banco de
+teste e, no frontend, lint + `tsc --noEmit` + build.
 
 A suíte cobre cadastro, login, autenticação, validação, criação, edição (incluindo `403` para post de outra pessoa) e listagem de
 posts, rate limit (`429` após o limite) e casos de segurança (senha nunca
