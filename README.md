@@ -188,8 +188,9 @@ O que cada serviço faz:
 - **`db`** — MySQL 8 com healthcheck; a API só sobe depois que ele aceita conexão.
 - **`backend`** — aplica `prisma migrate deploy` no boot (`docker-entrypoint.sh`),
   roda com usuário sem root e guarda as capas no volume `uploads`.
-- **`frontend`** — build com `output: "standalone"`; conversa com a API pela rede
-  interna (`API_URL=http://backend:3000`) e publica as capas com
+- **`frontend`** — build com `output: "standalone"` (ligado por `BUILD_STANDALONE=1`
+  no Dockerfile, para o `next start` local não avisar); conversa com a API pela
+  rede interna (`API_URL=http://backend:3000`) e publica as capas com
   `PUBLIC_API_URL`, que é o endereço que o navegador consegue alcançar.
 
 `docker compose down` preserva banco e capas; `docker compose down -v` apaga os

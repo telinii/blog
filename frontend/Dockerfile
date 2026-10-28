@@ -1,6 +1,7 @@
-# Imagem do frontend. `output: "standalone"` (next.config.ts) empacota só as
-# dependências usadas em runtime, então a imagem final não precisa de
-# node_modules nem do Next CLI.
+# Imagem do frontend. `BUILD_STANDALONE=1` liga o `output: "standalone"` do
+# next.config.ts: o build empacota só as dependências usadas em runtime, então
+# a imagem final não precisa de node_modules nem do Next CLI. Fora do Docker a
+# variável não existe e `next start` segue sendo o caminho normal.
 FROM node:22-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -11,6 +12,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV BUILD_STANDALONE=1
 # API_URL não é embutida no bundle: quem lê a API é o servidor do Next em
 # runtime, então a URL certa é a do container (ver docker-compose.yml).
 RUN npm run build
