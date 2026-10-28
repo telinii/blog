@@ -87,6 +87,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # LayoutProps/PageProps são globais gerados por `next dev`, `next build`
+      # ou `next typegen`. Sem esta etapa, um clone limpo falha no tsc com
+      # "Cannot find name 'LayoutProps'".
+      - name: Gera os tipos das rotas
+        run: npx next typegen
+
       - name: Tipos
         run: npx tsc --noEmit
 
