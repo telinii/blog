@@ -359,3 +359,7 @@ HS256).
 
 - [`backend/README.md`](backend/README.md) — detalhes da API
 - [`frontend/README.md`](frontend/README.md) — detalhes do frontend
+
+## Licença
+
+[MIT](LICENSE) © 2026 Luca
