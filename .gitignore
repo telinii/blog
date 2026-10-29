@@ -20,3 +20,6 @@ CURL_RESULTS.md
 tests_screenshots
 # Uploads locais de imagens dos posts
 backend/uploads/
+
+# Exports de sessão do OpenCode (backup vai pro pendrive, não pro git)
+sessoes/
