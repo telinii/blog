@@ -140,7 +140,7 @@ export async function createUser(input: NewUser): Promise<CreateUserResult> {
     body: JSON.stringify(input),
   });
 
-  if (status === 201) return { ok: true };
+  if (status === 201 || status === 202) return { ok: true };
 
   if (status === 409) {
     return { ok: false, erro: "Esse e-mail já está cadastrado." };
