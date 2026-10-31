@@ -6,6 +6,10 @@ import { RibbonFan } from "@/components/ribbon-fan";
 // Fica presa à seção do hero (absolute), não ao viewport: assim ela rola embora
 // com a página, em vez de ficar atrás dos posts.
 //
+// O SVG da palavra tem overflow visível: o halo pode passar do pé do hero e
+// morrer suave sobre o conteúdo, sem a linha reta que o corte da seção criava.
+// O eixo X continua recortado para a palavra não abrir rolagem horizontal.
+//
 // O <textPath> posiciona as letras e já gira cada uma conforme a tangente da
 // curva no ponto, sem cálculo de ângulo. São duas cópias: uma desfocada atrás,
 // fazendo o halo, e outra nítida em cima.
@@ -18,9 +22,10 @@ import { RibbonFan } from "@/components/ribbon-fan";
 //    qualquer largura. É isso que faz a palavra ficar centrada também no
 //    celular, sem media query.
 // 2. textAnchor="middle" centra pelo avanço dos glifos, não pela tinta. Sobra
-//    um desvio de ~31 unidades que o olho pega. O startOffset de 55,3% é o
-//    ponto da curva onde a caixa pintada das letras fica exatamente em x=800.
-const CENTRO = "55.3%";
+//    um desvio que o olho pega. O startOffset é o ponto da curva onde a caixa
+//    pintada das letras fica exatamente em x=800 — medido na Playfair, que
+//    desenha a palavra um fio à esquerda do centro do avanço.
+const CENTRO = "56.3%";
 
 // O leque sobe essa quantidade em relação à linha de base. Desenhado na altura
 // da curva, ele passa raspando o pé das letras e lê como sublinhado; levantado,
@@ -37,7 +42,7 @@ export function BlogWord() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 overflow-hidden"
+      className="pointer-events-none absolute inset-0 overflow-x-clip"
     >
       <RibbonFan
         id="hero-fita"
@@ -55,7 +60,7 @@ export function BlogWord() {
       <svg
         viewBox="0 0 1600 600"
         preserveAspectRatio="xMidYMax slice"
-        className="absolute inset-0 h-full w-full"
+        className="absolute inset-0 h-full w-full overflow-visible"
       >
         <defs>
           <path id="curva-blog" d={CURVA} fill="none" />

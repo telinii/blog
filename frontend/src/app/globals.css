@@ -28,13 +28,11 @@
      navy/violeta do tema escuro. */
   --bg-sky-bottom: #f7f2e7;
   --bg-sky-top: #e8e3f4;
-  --bg-veil-1: #ffffff;
-  --bg-veil-2: #f0e0c8;
   --bg-word: #241f4a;
   --bg-word-glow: #8d7ce0;
-  --bg-word-fundo: rgba(36, 31, 74, 0.06);
-  --bg-dot: rgba(58, 47, 99, 0.18);
-  --bg-hair: rgba(58, 47, 99, 0.1);
+
+  /* Contorno do mapa-múndi do fundo: tinta escura e suave no claro. */
+  --map-stroke: rgba(36, 31, 74, 0.22);
 
   /* Fita do leque: sai do lilás do fundo, passa por um rosa empoeirado e
      termina no âmbar do acento. Fica no mesmo duotone do site — a fita não
@@ -82,13 +80,11 @@
   /* Fundo do site: navy embaixo, violeta em cima */
   --bg-sky-bottom: #0f0c29;
   --bg-sky-top: #302b63;
-  --bg-veil-1: #6a5cc4;
-  --bg-veil-2: #06041a;
   --bg-word: #ffffff;
   --bg-word-glow: #a99bff;
-  --bg-word-fundo: rgba(255, 255, 255, 0.09);
-  --bg-dot: rgba(255, 255, 255, 0.16);
-  --bg-hair: rgba(255, 255, 255, 0.09);
+
+  /* No escuro o mapa é branco de verdade, só que discreto. */
+  --map-stroke: rgba(255, 255, 255, 0.3);
 
   /* No escuro a fita acende: periwinkle no início, brasa no fim. */
   --ribbon-de: #a99bff;
@@ -135,23 +131,16 @@
     outline-offset: 2px;
   }
 
-  /* Grão sutil, usado sobre as artes e no fundo do site. */
+  /* O mapa some antes do fim da camada: sem isso, a Antártida terminaria
+     numa linha reta na altura em que o <div> acaba. */
+  .mapa-fundo {
+    mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+  }
+
+  /* Grão sutil, usado sobre as artes de categoria. */
   .grain {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
     background-size: 120px 120px;
-  }
-
-  /* Grade de pontos do fundo. A máscara apaga as bordas: o miolo fica denso e
-     o canto some, então o olho não encontra a linha de fim da tela. */
-  .grade {
-    background-image: radial-gradient(var(--bg-dot) 1px, transparent 1.2px);
-    background-size: 26px 26px;
-    mask-image: radial-gradient(
-      120% 110% at 50% 42%,
-      #000 18%,
-      rgba(0, 0, 0, 0.55) 62%,
-      transparent 100%
-    );
   }
 }
 
@@ -159,25 +148,14 @@
    tamanho aqui é em unidades do viewBox (1600x600), não em pixels de tela. */
 .palavra,
 .palavra-brilho {
-  font-family: var(--font-sans);
-  font-size: 480px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-family: var(--font-playfair), Georgia, serif;
+  font-size: 420px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }
 
 .palavra {
   fill: var(--bg-word);
-}
-
-/* Cópia apagada no fundo fixo: maior que a do hero e sem halo, porque ela é
-   textura, não tipografia. */
-.palavra-fundo {
-  font-family: var(--font-sans);
-  /* Valor de partida: o componente recalcula pelo tamanho da tela. */
-  font-size: 600px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  fill: var(--bg-word-fundo);
 }
 
 /* Abaixo de 1024px o viewBox aparece com bem menos largura útil, então a
@@ -186,22 +164,14 @@
 @media (max-width: 1023px) {
   .palavra,
   .palavra-brilho {
-    font-size: 340px;
-  }
-
-  .palavra-fundo {
-    font-size: 400px;
+    font-size: 298px;
   }
 }
 
 @media (max-width: 767px) {
   .palavra,
   .palavra-brilho {
-    font-size: 240px;
-  }
-
-  .palavra-fundo {
-    font-size: 180px;
+    font-size: 210px;
   }
 }
 

@@ -38,7 +38,7 @@ export default function Home({ searchParams }: Params) {
     <main className="w-full">
       {/* Hero de largura total: a palavra atravessa a seção e é cortada pelas
           bordas dela. O conteúdo fica em cima, na coluna de sempre. */}
-      <section className="relative isolate h-[44vh] min-h-[300px] lg:h-[60vh] lg:min-h-[420px] overflow-hidden">
+      <section className="relative isolate h-[44vh] min-h-[300px] lg:h-[60vh] lg:min-h-[420px] overflow-x-clip">
         <BlogWord />
       </section>
 
