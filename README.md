@@ -24,13 +24,15 @@ blog/
 
 - Cadastro de usuários com senha hasheada (bcrypt, 10 rounds)
 - Login com emissão de token JWT (HS256, expira em 1h)
-- Criação de posts protegida por autenticação Bearer
+- Criação de posts protegida por autenticação Bearer, como publicado ou rascunho
 - Capa opcional por post: upload de imagem (JPG, PNG, WEBP, GIF ou AVIF, até 5 MB), com fallback para a arte da categoria
-- Edição pelo próprio autor (texto, categoria e capa), bloqueada para os demais
-- Listagem pública de posts e página de detalhe, com os dados do autor (nunca a senha)
+- Edição e exclusão pelo próprio autor (texto, categoria e capa), bloqueadas para os demais
+- Rascunhos privados: só o autor vê, abre e publica os próprios rascunhos (para os outros, 404)
+- Perfil do autor com nome e bio editáveis; a bio aparece embaixo do nome nos posts
+- Listagem pública paginada (`?pagina=N`) e página de detalhe, com os dados do autor (nunca a senha)
 - Rate limit por IP contra força bruta no login e spam de cadastro
 - Validação de entrada com Zod e mensagens de erro em português
-- Frontend com home, login, cadastro, publicação e detalhe do post
+- Frontend com home paginada, login, cadastro, publicação, rascunhos, perfil e detalhe do post
   (Server Components e Server Actions, token em cookie `httpOnly`)
 
 ## Requisitos
